@@ -118,6 +118,18 @@ El frontend y la API (`/api/analyze/:address`) comparten el mismo dominio.
 
 ---
 
+## GenLayer (IA descentralizada)
+
+Para usar el consenso LLM de GenLayer en lugar de OpenAI:
+
+1. Despliega el contrato: `npm run deploy:genlayer` (requiere `GENLAYER_PRIVATE_KEY`).
+2. Añade `GENLAYER_CONTRACT_ADDRESS` al `.env`.
+3. El backend usará GenLayer automáticamente; si falla, hace fallback a OpenAI.
+
+Ver [GENLAYER.md](./GENLAYER.md) para la guía completa.
+
+---
+
 ## Arquitectura
 
 ```

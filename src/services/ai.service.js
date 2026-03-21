@@ -1,6 +1,6 @@
 /**
  * Servicio de IA: analiza el comportamiento de la billetera y clasifica (Humano vs Bot)
- * Por ahora usa OpenAI como puente; mañana se reemplazará por GenLayer Intelligent Contract.
+ * Modo dual: GenLayer (si configurado) → fallback a OpenAI.
  */
 
 import OpenAI from "openai";
@@ -8,15 +8,29 @@ import OpenAI from "openai";
 const SYSTEM_PROMPT = `Eres un auditor experto de blockchain. Analiza el siguiente resumen estadístico de las últimas 50 transacciones de una billetera en Avalanche. Debes clasificar la billetera en una de estas 3 categorías de 'identity': 'Verified Human User', 'High-Frequency Trading Bot', o 'Smart Contract Service'. También debes asignar un 'risk_score' del 0 al 100 (donde 100 es alto riesgo de bot/MEV) y generar una 'narrative' de 2 oraciones explicando por qué tomaste esa decisión basándote en los datos. Devuelve la respuesta ESTRICTAMENTE en este formato JSON, sin markdown ni texto adicional: { "identity": "...", "risk_score": 0, "narrative": "..." }`;
 
 /**
- * Envía el resumen estadístico a la IA y obtiene el veredicto
+ * Envía el resumen estadístico a la IA y obtiene el veredicto.
+ * Usa GenLayer si GENLAYER_CONTRACT_ADDRESS está definido; si no, OpenAI.
  * @param {string} statisticalSummary - Resumen generado por el agregador
  * @returns {Promise<{ identity: string, risk_score: number, narrative: string }>}
  */
 export async function analyzeWalletBehavior(statisticalSummary) {
+  if (process.env.GENLAYER_CONTRACT_ADDRESS && process.env.GENLAYER_PRIVATE_KEY) {
+    try {
+      const { analyzeWithGenLayer } = await import("./genlayer.service.js");
+      return await analyzeWithGenLayer(statisticalSummary);
+    } catch (err) {
+      console.warn("[ai] GenLayer falló, usando OpenAI:", err.message);
+    }
+  }
+
+  return analyzeWithOpenAI(statisticalSummary);
+}
+
+async function analyzeWithOpenAI(statisticalSummary) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "OPENAI_API_KEY no configurada. Necesaria para el análisis de IA."
+      "OPENAI_API_KEY no configurada. Para GenLayer usa GENLAYER_CONTRACT_ADDRESS y GENLAYER_PRIVATE_KEY."
     );
   }
 

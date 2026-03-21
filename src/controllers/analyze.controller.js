@@ -63,7 +63,9 @@ export async function analyzeAddress(req, res) {
     console.error("[analyze] Error:", err.message);
 
     const status =
-      err.message.includes("GLACIER") || err.message.includes("OpenAI")
+      err.message.includes("GLACIER") ||
+      err.message.includes("OpenAI") ||
+      err.message.includes("GenLayer")
         ? 503
         : 500;
 
