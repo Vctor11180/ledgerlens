@@ -69,26 +69,40 @@ export function getSupportedChains() {
   return Object.keys(SUPPORTED_CHAINS);
 }
 
+/** Parsea valor a BigInt (Glacier puede enviar string, number o hex). */
+function parseBigInt(val) {
+  if (val == null || val === "") return 0n;
+  try {
+    return BigInt(val);
+  } catch {
+    return 0n;
+  }
+}
+
 /**
- * Extrae solo la información útil de cada transacción cruda
+ * Extrae solo la información útil de cada transacción cruda (Glacier API).
+ * Soporta datos en nativeTransaction o en la raíz del objeto.
  */
 function extractUsefulData(tx) {
-  const native = tx.nativeTransaction ?? {};
+  const native = tx.nativeTransaction ?? tx;
   const to = native.to ?? {};
-  const method = native.method ?? {};
 
   return {
-    hash: native.txHash ?? null,
-    timestamp: native.blockTimestamp ? Number(native.blockTimestamp) : null,
-    to: to.address ?? null,
-    toName: to.name ?? null,
-    toSymbol: to.symbol ?? null,
-    value: native.value ? BigInt(native.value) : 0n,
-    gasUsed: native.gasUsed ? BigInt(native.gasUsed) : 0n,
-    gasPrice: native.gasPrice ? BigInt(native.gasPrice) : 0n,
-    gasLimit: native.gasLimit ? BigInt(native.gasLimit) : 0n,
-    callType: method.callType ?? "UNKNOWN",
-    methodHash: method.methodHash ?? "",
-    methodName: method.methodName ?? "",
+    hash: native.txHash ?? native.hash ?? null,
+    timestamp: native.blockTimestamp
+      ? Number(native.blockTimestamp)
+      : native.timestamp
+        ? Number(native.timestamp)
+        : null,
+    to: (typeof to === "object" ? to.address : to) ?? null,
+    toName: typeof to === "object" ? to.name : null,
+    toSymbol: typeof to === "object" ? to.symbol : null,
+    value: parseBigInt(native.value),
+    gasUsed: parseBigInt(native.gasUsed),
+    gasPrice: parseBigInt(native.gasPrice),
+    gasLimit: parseBigInt(native.gasLimit),
+    callType: (native.method ?? {}).callType ?? "UNKNOWN",
+    methodHash: (native.method ?? {}).methodHash ?? "",
+    methodName: (native.method ?? {}).methodName ?? "",
   };
 }

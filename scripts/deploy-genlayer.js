@@ -50,7 +50,10 @@ async function main() {
     interval: 5000,
   });
 
-  const addr = receipt?.data?.contract_address;
+  // Bradbury: addr en txDataDecoded; otros: en data.contract_address
+  const addr =
+    receipt?.txDataDecoded?.contractAddress ??
+    receipt?.data?.contract_address;
   if (addr) {
     console.log("\n✅ Contrato desplegado:");
     console.log("GENLAYER_CONTRACT_ADDRESS=" + addr);

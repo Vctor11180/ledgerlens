@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react"
 import { Search, Loader2, Eye, Wallet, LogOut, ChevronDown } from "lucide-react"
-import { useConnect, useConnection, useDisconnect, useSwitchChain } from "wagmi"
+import {
+  useBalance,
+  useChainId,
+  useConnect,
+  useConnection,
+  useDisconnect,
+  useSwitchChain,
+} from "wagmi"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAnalysisStore } from "@/features/analysis/store/useAnalysisStore"
@@ -13,16 +20,28 @@ export function Header() {
   const { isLoading, fetchAnalysis, reset, chain, setChain } = useAnalysisStore()
 
   const { address, status } = useConnection()
+  const connected = status === "connected" && !!address
+  const chainId = useChainId()
+  const { data: balance } = useBalance({ address: connected ? address : undefined })
   const { mutate: connect, connectors, isPending: isConnecting } = useConnect()
   const { mutateAsync: disconnectAsync, isPending: isDisconnecting } =
     useDisconnect()
   const { switchChainAsync, isPending: isSwitching } = useSwitchChain()
 
-  const connected = status === "connected" && !!address
-
   useEffect(() => {
     if (address) setInput(address)
   }, [address])
+
+  /** Al conectar, sugerir cambiar a la red del selector (Avalanche/Ethereum) si la wallet está en otra. */
+  useEffect(() => {
+    if (!connected || !chainId || isSwitching) return
+    const wantedChainId = chainIdForApp[chain]
+    if (chainId !== wantedChainId) {
+      switchChainAsync({ chainId: wantedChainId }).catch(() => {
+        /* usuario rechazó o red no añadida */
+      })
+    }
+  }, [connected, chainId, chain, switchChainAsync, isSwitching])
 
   useEffect(() => {
     if (!walletMenuOpen) return
@@ -115,7 +134,7 @@ export function Header() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Paste an EVM wallet address (0x...)"
+              placeholder="Connect wallet to auto-fill, or paste address (0x...)"
               className="h-10 border-slate-800 bg-slate-900/50 pl-10 font-mono text-sm text-slate-200 placeholder:text-slate-600 focus-visible:ring-indigo-500/40"
             />
           </div>
@@ -126,6 +145,8 @@ export function Header() {
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
+            ) : connected && input.trim().toLowerCase() === address?.toLowerCase() ? (
+              "Analizar mi wallet"
             ) : (
               "Analyze"
             )}
@@ -135,6 +156,15 @@ export function Header() {
         <div className="relative shrink-0" ref={walletWrapRef}>
           {connected ? (
             <div className="flex flex-wrap items-center justify-end gap-2">
+              {balance && (
+                <span
+                  className="rounded-md bg-slate-800/80 px-2 py-1 font-mono text-xs text-emerald-400"
+                  title={`Balance: ${balance.value} wei`}
+                >
+                  {(Number(balance.value) / 10 ** balance.decimals).toFixed(4)}{" "}
+                  {balance.symbol}
+                </span>
+              )}
               <span className="max-w-[140px] truncate font-mono text-xs text-slate-400">
                 {shortAddress(address!)}
               </span>

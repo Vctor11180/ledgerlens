@@ -56,7 +56,7 @@ export async function analyzeAddress(req, res) {
       formattedTransactions,
       statisticalSummary,
       gasEfficiency,
-    } = processRawTransactions(rawTxs);
+    } = processRawTransactions(rawTxs, { chain: requestedChain });
 
     const aiVerdict = await analyzeWalletBehavior(statisticalSummary);
 

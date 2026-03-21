@@ -1,61 +1,72 @@
 # LedgerLens
 
-> Analizador financiero on-chain para billeteras Avalanche. Extrae transacciones, calcula estadísticas y usa IA para clasificar **Humano vs Bot** con perfilamiento de riesgo.  
-> **Aleph Hackathon 2026** · MVP en 48h
+> Analizador financiero on-chain para billeteras Avalanche y Ethereum. Extrae transacciones, calcula estadísticas y usa IA para clasificar **Humano vs Bot** con perfilamiento de riesgo.  
+> **Aleph Hackathon 2026**
 
-## Stack (Bloqueado para el Hackathon)
+→ **Hackathon:** [HACKATHON.md](./HACKATHON.md) · **Checklist:** [CHECKLIST.md](./CHECKLIST.md)
+
+## Stack
 
 | Capa | Tecnología |
 |------|------------|
-| Frontend | React 18 + Vite + TypeScript + Tailwind + shadcn/ui |
-| Backend | Node.js + Express + ES Modules |
-| L1 Datos | Avalanche Glacier API (C-Chain) |
-| IA (MVP) | OpenAI / Gemini / Claude (mañana: GenLayer Testnet) |
+| Frontend | React 19 + Vite + TypeScript + Tailwind + wagmi + shadcn/ui |
+| Backend | Node.js + Express + ES Modules + Vercel Serverless |
+| L1 Datos | Avalanche Glacier API (C-Chain + Ethereum) |
+| IA | Hugging Face (principal) → OpenAI (fallback) → GenLayer (opcional) |
+| Wallet | MetaMask / Core (Avalanche + Ethereum) |
 
 ---
 
-## Cómo obtener las API Keys
+## Cómo obtener las API Keys (obligatorias)
 
-### 1. GLACIER_API_KEY (Avalanche)
+### 1. GLACIER_API_KEY (obligatoria)
 
 1. Entra a **[AvaCloud](https://app.avacloud.io/)** y crea una cuenta.
 2. En el dashboard, ve a **API Keys** o **Developer**.
 3. Crea una nueva API key.
 4. Copia la key y úsala como `GLACIER_API_KEY` en tu `.env`.
 
-La Glacier API es la fuente de datos para las transacciones de la C-Chain de Avalanche.
+La Glacier API es la fuente de datos para transacciones (Avalanche C-Chain + Ethereum).
 
-### 2. OPENAI_API_KEY
+### 2. Proveedor de IA (al menos uno)
 
-1. Entra a **[platform.openai.com](https://platform.openai.com/api-keys)**.
-2. Crea una API key (formato `sk-...`).
-3. Úsala como `OPENAI_API_KEY` en tu `.env`.
+**Hugging Face (recomendado, gratis):**
+1. [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) → New token (tipo Read).
+2. Añade `HUGGINGFACE_API_KEY=hf_...` en `.env`.
+
+**OpenAI (respaldo):**
+1. [platform.openai.com/api-keys](https://platform.openai.com/api-keys) → Create key.
+2. Añade `OPENAI_API_KEY=sk-...` en `.env`.
 
 ---
 
 ## Desarrollo local
 
-### Backend
+### 1. Configurar variables de entorno
 
 ```bash
-cd ledgerlens-backend
 cp .env.example .env
-# Edita .env con GLACIER_API_KEY y OPENAI_API_KEY
-npm install
-npm start
+# Edita .env con:
+#   GLACIER_API_KEY     (obligatoria)
+#   HUGGINGFACE_API_KEY (o OPENAI_API_KEY)
 ```
 
-API en `http://localhost:3001`.
-
-### Frontend
+### 2. Backend
 
 ```bash
-cd ledgerlens-front
 npm install
 npm run dev
 ```
 
-Frontend en `http://localhost:5173`. En desarrollo apunta a `http://localhost:3001` para la API.
+API en `http://localhost:3001`.
+
+### 3. Frontend
+
+```bash
+cd ledgerlens-front && npm install && npm run dev
+```
+
+Frontend en `http://localhost:5173`. En desarrollo usa `http://localhost:3001` para la API.
 
 ---
 
@@ -85,9 +96,9 @@ git push -u origin main
    - **Output Directory**: `ledgerlens-front/dist`
 
 4. En **Environment Variables** añade:
-   - `GLACIER_API_KEY` = tu key de AvaCloud
-   - `OPENAI_API_KEY` = tu key de OpenAI
-   - `AVAX_USD_PRICE` = `35` (opcional, para estimar gas en USD)
+   - `GLACIER_API_KEY` (obligatoria)
+   - `HUGGINGFACE_API_KEY` o `OPENAI_API_KEY` (al menos una)
+   - `AVAX_USD_PRICE` = `35` (opcional)
 
 5. Deploy.
 
@@ -103,18 +114,31 @@ El frontend y la API (`/api/analyze/:address`) comparten el mismo dominio.
 | GET | `/health` | Estado del servicio |
 | GET | `/api/analyze/:address` | Analiza billetera (dirección EVM 0x...) |
 
-### Formato de respuesta (contrato con el Frontend)
+### Formato de respuesta
 
 ```json
 {
   "identity": "Verified Human User | High-Frequency Trading Bot | Smart Contract Service",
   "risk_score": 0,
   "narrative": "…",
+  "chain": "avalanche",
   "transactions": [
-    { "id": "0x...", "time": "…", "action": "Swap|Transfer", "counterparty": "…", "gas_usd": 1.23 }
-  ]
+    { "id": "0x...", "time": "…", "action": "Swap|Transfer|Approve|Bridge", "counterparty": "…", "gas_usd": 1.23, "value_native": 0.5, "value_usd": 17.5, "native_symbol": "AVAX" }
+  ],
+  "gas_efficiency": [ { "hour": "00:00", "gas_usd": 0, "avg_network": 0.21 } ]
 }
 ```
+
+**Query:** `?chain=avalanche` | `?chain=ethereum`
+
+---
+
+## Wallet (MetaMask / Core)
+
+- Conecta wallet → la dirección se rellena automáticamente.
+- Selector Avalanche / Ethereum → cambia la red en la wallet si hace falta.
+- Balance visible en header cuando conectado.
+- Ver [WALLET.md](./ledgerlens-front/WALLET.md) para detalles.
 
 ---
 

@@ -11,10 +11,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const path = (req.url || "").split("?")[0];
-  const segments = path.split("/").filter(Boolean);
-  const address = segments[segments.length - 1] || "";
+  const base = `http://${req.headers?.host || "localhost"}`
+  const url = new URL(req.url || "/", base)
+  const path = url.pathname
+  const segments = path.split("/").filter(Boolean)
+  const address = segments[segments.length - 1] || ""
 
-  req.params = { address };
-  await analyzeAddress(req, res);
+  req.params = { address }
+  req.query = Object.fromEntries(url.searchParams)
+  await analyzeAddress(req, res)
 }

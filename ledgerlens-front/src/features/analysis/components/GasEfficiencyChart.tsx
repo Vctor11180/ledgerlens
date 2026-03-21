@@ -18,11 +18,11 @@ export function GasEfficiencyChart({ data }: GasEfficiencyChartProps) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-6">
       <h3 className="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-400">
-        Gas Consumption vs Network Average
+        Gas gastado por hora (UTC) — datos reales on-chain
       </h3>
       <p className="mb-4 text-xs text-slate-600">
-        Estimación a partir de gas usado y precio AVAX/ETH en el servidor; puede
-        mostrar $0.00 por redondeo. Contrasta con el gas nativo en el explorador.
+        Total USD de gas por franja horaria, calculado con gas usado × precio
+        nativo (AVAX/ETH). Solo datos de tus transacciones, sin estimados.
       </p>
       <div className="h-[260px] w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -31,10 +31,6 @@ export function GasEfficiencyChart({ data }: GasEfficiencyChartProps) {
               <linearGradient id="gasWallet" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
                 <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gasNetwork" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -55,25 +51,23 @@ export function GasEfficiencyChart({ data }: GasEfficiencyChartProps) {
                 borderRadius: "8px",
                 color: "#e2e8f0",
               }}
-              formatter={(value) => [`$${Number(value).toFixed(2)}`, ""]}
+              formatter={(value, name, props) => {
+                const payload = props?.payload
+                const extra =
+                  payload?.tx_count != null
+                    ? ` (${payload.tx_count} txs)`
+                    : ""
+                return [`$${Number(value).toFixed(2)}${extra}`, name]
+              }}
+              labelFormatter={(label) => `${label} UTC`}
             />
-            <Legend
-              wrapperStyle={{ color: "#94a3b8", fontSize: "12px" }}
-            />
+            <Legend wrapperStyle={{ color: "#94a3b8", fontSize: "12px" }} />
             <Area
               type="monotone"
               dataKey="gas_usd"
-              name="This Wallet"
+              name="Gas (USD)"
               stroke="#ef4444"
               fill="url(#gasWallet)"
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="avg_network"
-              name="Network Avg"
-              stroke="#6366f1"
-              fill="url(#gasNetwork)"
               strokeWidth={2}
             />
           </AreaChart>

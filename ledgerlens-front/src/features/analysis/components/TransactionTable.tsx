@@ -62,12 +62,29 @@ export function TransactionTable({ transactions, chain }: TransactionTableProps)
         },
       }),
       columnHelper.accessor("time", {
-        header: "Time",
-        cell: (info) => (
-          <span className="font-mono text-xs text-slate-400">
-            {info.getValue()}
-          </span>
-        ),
+        header: "Fecha",
+        cell: (info) => {
+          const iso = info.getValue()
+          try {
+            const d = new Date(iso)
+            const date = d.toLocaleDateString("es", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+            const time = d.toLocaleTimeString("es", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+            return (
+              <span className="font-mono text-xs text-slate-400" title={iso}>
+                {date}, {time}
+              </span>
+            )
+          } catch {
+            return <span className="font-mono text-xs text-slate-500">{iso}</span>
+          }
+        },
       }),
       columnHelper.accessor("action", {
         header: "Action",
@@ -87,6 +104,30 @@ export function TransactionTable({ transactions, chain }: TransactionTableProps)
             {info.getValue()}
           </span>
         ),
+      }),
+      columnHelper.display({
+        id: "amount",
+        header: "Amount",
+        cell: (info) => {
+          const row = info.row.original
+          const native = row.value_native ?? 0
+          const symbol = row.native_symbol ?? "AVAX"
+          const usd = row.value_usd ?? 0
+          if (native === 0 && usd === 0) return (
+            <span className="font-mono text-xs text-slate-600">—</span>
+          )
+          return (
+            <span className="font-mono text-xs text-slate-300" title={usd > 0 ? `≈ $${usd.toFixed(2)}` : undefined}>
+              {native > 0.000001 ? native.toFixed(6) : native}{" "}
+              <span className="text-slate-500">{symbol}</span>
+              {usd > 0 && (
+                <span className="ml-1 text-slate-500">
+                  (${usd.toFixed(2)})
+                </span>
+              )}
+            </span>
+          )
+        },
       }),
       columnHelper.accessor("gas_usd", {
         header: "Gas (USD)",
@@ -120,8 +161,9 @@ export function TransactionTable({ transactions, chain }: TransactionTableProps)
         Recent Transactions
       </h3>
       <p className="mb-4 text-xs text-slate-600">
-        Cada hash enlaza al explorador: comprueba fecha, contrato y gas reales.
-        La columna Action es una etiqueta heurística (no es auditoría forense).
+        Hash → explorador. <strong>Amount</strong> = valor nativo (AVAX/ETH) enviado
+        en la tx; swaps y transfers de tokens suelen mostrar — porque el value en
+        la tx raíz es 0. <strong>Gas</strong> = coste real calculado on-chain.
       </p>
       <div className="overflow-x-auto rounded-lg border border-slate-800">
         <Table>

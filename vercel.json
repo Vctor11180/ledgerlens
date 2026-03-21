@@ -4,6 +4,11 @@
   "framework": null,
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+    { "source": "/((?!api).*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/analyze/[address].js": {
+      "maxDuration": 10
+    }
+  }
 }

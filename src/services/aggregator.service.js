@@ -28,10 +28,16 @@ const GWEI = 10n ** 9n;
 /**
  * Procesa transacciones crudas y devuelve el formato esperado por el Frontend + resumen para la IA
  * @param {Array} rawTxArray - Array de objetos extraídos por avalanche.service
+ * @param {{ chain?: string }} opts - chain: "avalanche" | "ethereum" para precio nativo correcto
  * @returns {{ formattedTransactions: Array, statisticalSummary: string, gasEfficiency: Array }}
  */
-export function processRawTransactions(rawTxArray) {
-  const avaxUsdPrice = parseFloat(process.env.AVAX_USD_PRICE || "35");
+export function processRawTransactions(rawTxArray, opts = {}) {
+  const chain = (opts.chain || "avalanche").toLowerCase();
+  const nativeUsdPrice =
+    chain === "ethereum"
+      ? parseFloat(process.env.ETH_USD_PRICE || "3500")
+      : parseFloat(process.env.AVAX_USD_PRICE || "35");
+  const nativeSymbol = chain === "ethereum" ? "ETH" : "AVAX";
   const formattedTransactions = [];
   const addressCount = new Map();
   const actionCount = new Map();
@@ -39,7 +45,8 @@ export function processRawTransactions(rawTxArray) {
   for (const raw of rawTxArray) {
     const action = resolveAction(raw);
     const counterparty = formatCounterparty(raw);
-    const gasUsd = calculateGasUsd(raw, avaxUsdPrice);
+    const gasUsd = calculateGasUsd(raw, nativeUsdPrice);
+    const { valueNative, valueUsd } = calculateValue(raw, nativeUsdPrice);
     const time = raw.timestamp
       ? new Date(raw.timestamp * 1000).toISOString()
       : new Date().toISOString();
@@ -50,6 +57,9 @@ export function processRawTransactions(rawTxArray) {
       action,
       counterparty,
       gas_usd: Math.round(gasUsd * 100) / 100,
+      value_native: valueNative,
+      value_usd: valueUsd,
+      native_symbol: nativeSymbol,
     });
 
     const addr = (raw.to || "unknown").toLowerCase();
@@ -61,7 +71,8 @@ export function processRawTransactions(rawTxArray) {
     rawTxArray,
     formattedTransactions,
     addressCount,
-    actionCount
+    actionCount,
+    chain
   );
   const gasEfficiency = buildGasEfficiency(formattedTransactions);
 
@@ -94,14 +105,27 @@ function calculateGasUsd(raw, avaxUsdPrice) {
   return costAvax * avaxUsdPrice;
 }
 
+/** Devuelve el valor enviado en la tx (nativo: AVAX/ETH) y en USD. */
+function calculateValue(raw, nativeUsdPrice) {
+  const valueWei = raw.value ?? 0n;
+  const valueNative = Number(valueWei) / Number(10n ** AVAX_DECIMALS);
+  const valueUsd = valueNative * nativeUsdPrice;
+  return {
+    valueNative: Math.round(valueNative * 1e6) / 1e6,
+    valueUsd: Math.round(valueUsd * 100) / 100,
+  };
+}
+
 function buildStatisticalSummary(
   rawTxArray,
   formattedTransactions,
   addressCount,
-  actionCount
+  actionCount,
+  chain = "avalanche"
 ) {
   const totalTx = rawTxArray.length;
   const totalGasUsd = formattedTransactions.reduce((s, t) => s + t.gas_usd, 0);
+  const totalValueUsd = formattedTransactions.reduce((s, t) => s + (t.value_usd ?? 0), 0);
   const avgGasUsd = totalTx > 0 ? (totalGasUsd / totalTx).toFixed(2) : "0";
 
   const topAddresses = [...addressCount.entries()]
@@ -114,35 +138,37 @@ function buildStatisticalSummary(
     .map(([action, count]) => `${action}: ${count}`)
     .join("; ");
 
-  return `Resumen de las últimas ${totalTx} transacciones de una billetera en Avalanche C-Chain. Total gas gastado: $${totalGasUsd.toFixed(2)} USD. Gas promedio por tx: $${avgGasUsd} USD. Direcciones más frecuentes: ${topAddresses || "N/A"}. Desglose de acciones: ${actionBreakdown || "N/A"}.`;
+  const chainLabel = chain === "ethereum" ? "Ethereum" : "Avalanche C-Chain";
+  return `Resumen de las últimas ${totalTx} transacciones de una billetera en ${chainLabel}. Total gas gastado: $${totalGasUsd.toFixed(2)} USD. Volumen nativo estimado: $${totalValueUsd.toFixed(2)} USD. Gas promedio por tx: $${avgGasUsd} USD. Direcciones más frecuentes: ${topAddresses || "N/A"}. Desglose de acciones: ${actionBreakdown || "N/A"}.`;
 }
 
+/**
+ * Agrupa gas por hora (UTC) usando datos reales de las txs.
+ * Solo datos on-chain: sin estimados ni promedios inventados.
+ */
 function buildGasEfficiency(formattedTransactions) {
   const byHour = new Map();
 
   for (const tx of formattedTransactions) {
     const date = new Date(tx.time);
     const hourKey = `${String(date.getUTCHours()).padStart(2, "0")}:00`;
-    if (!byHour.has(hourKey)) {
-      byHour.set(hourKey, { total: 0, count: 0 });
-    }
-    const entry = byHour.get(hourKey);
-    entry.total += tx.gas_usd;
-    entry.count += 1;
+    const current = byHour.get(hourKey) ?? { totalGas: 0, count: 0 };
+    current.totalGas += tx.gas_usd;
+    current.count += 1;
+    byHour.set(hourKey, current);
   }
 
-  const hours = [
-    "00:00", "04:00", "08:00", "12:00", "16:00", "20:00"
-  ];
-  const result = hours.map((hour) => {
-    const entry = byHour.get(hour) ?? { total: 0, count: 0 };
-    const avg = entry.count > 0 ? entry.total / entry.count : 0;
+  // 24 horas para ver distribución real del día
+  const allHours = Array.from({ length: 24 }, (_, i) =>
+    `${String(i).padStart(2, "0")}:00`
+  );
+
+  return allHours.map((hour) => {
+    const entry = byHour.get(hour) ?? { totalGas: 0, count: 0 };
     return {
       hour,
-      gas_usd: Math.round(avg * 100) / 100,
-      avg_network: Math.round((avg * 0.3 + Math.random() * 2) * 100) / 100,
+      gas_usd: Math.round(entry.totalGas * 100) / 100,
+      tx_count: entry.count,
     };
   });
-
-  return result;
 }

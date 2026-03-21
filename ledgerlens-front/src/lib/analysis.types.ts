@@ -8,12 +8,18 @@ export interface Transaction {
   action: "Swap" | "Transfer" | "Approve" | "Bridge"
   counterparty: string
   gas_usd: number
+  /** Monto en token nativo (AVAX/ETH) */
+  value_native?: number
+  /** Monto estimado en USD */
+  value_usd?: number
+  /** Símbolo: AVAX | ETH */
+  native_symbol?: string
 }
 
 export interface GasDataPoint {
   hour: string
   gas_usd: number
-  avg_network: number
+  tx_count?: number
 }
 
 export interface AnalysisResult {
