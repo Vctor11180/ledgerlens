@@ -49,17 +49,16 @@ class WalletAnalyzer(gl.Contract):
         Almacena identity, risk_score y narrative en el estado del contrato.
         """
         def leader_fn() -> typing.Any:
-            prompt = f"""Eres un auditor experto de blockchain. Analiza el siguiente resumen estadístico de las últimas 50 transacciones de una billetera en Avalanche.
+            prompt = f"""Eres un auditor experto de blockchain. Analiza el siguiente resumen estadístico de transacciones recientes de una billetera (la cantidad viene en el texto).
 
 Resumen:
 {statistical_summary}
 
-Debes clasificar la billetera en una de estas 3 categorías de 'identity': 'Verified Human User', 'High-Frequency Trading Bot', o 'Smart Contract Service'.
+El desglose puede incluir Contract/Other (llamadas no clasificadas), no solo swaps. Si el gas total en USD es 0 o muy bajo, puede ser dato incompleto del indexador; no concluyas "bot" solo por eso.
 
-También debes asignar un 'risk_score' del 0 al 100 (donde 100 es alto riesgo de bot/MEV) y generar una 'narrative' de 2 oraciones explicando por qué tomaste esa decisión.
+Clasifica la billetera en una de: 'Verified Human User', 'High-Frequency Trading Bot', o 'Smart Contract Service'. Asigna 'risk_score' 0-100 y 'narrative' en 2 oraciones.
 
-Devuelve ÚNICAMENTE un objeto JSON con estas claves exactas, sin texto adicional:
-{{ "identity": "...", "risk_score": 0, "narrative": "..." }}"""
+Devuelve ÚNICAMENTE JSON: {{"identity": "...", "risk_score": 0, "narrative": "..." }}"""
             return gl.nondet.exec_prompt(prompt, response_format="json")
 
         def validator_fn(leader_result: typing.Any) -> bool:

@@ -8,6 +8,11 @@ const SUPPORTED_CHAINS = {
     chainId: "43114",
     label: "Avalanche C-Chain",
   },
+  /** Testnet: misma dirección EVM que en mainnet, actividad distinta en cadena. */
+  fuji: {
+    chainId: "43113",
+    label: "Avalanche Fuji",
+  },
   ethereum: {
     chainId: "1",
     label: "Ethereum Mainnet",
@@ -62,11 +67,41 @@ export async function fetchTransactions(address, chain = "avalanche") {
   const data = await response.json();
   const rawTransactions = data.transactions ?? [];
 
-  return rawTransactions.map(extractUsefulData);
+  return rawTransactions.map((tx) => extractUsefulData(tx, normalizedAddress));
 }
 
 export function getSupportedChains() {
   return Object.keys(SUPPORTED_CHAINS);
+}
+
+/**
+ * Obtiene el balance nativo via RPC.
+ */
+export async function fetchNativeBalance(address, chain = "avalanche") {
+  const rpcUrls = {
+    avalanche: "https://api.avax.network/ext/bc/C/rpc",
+    fuji: "https://api.avax-test.network/ext/bc/C/rpc",
+    ethereum: "https://cloudflare-eth.com"
+  };
+  const url = rpcUrls[chain] || rpcUrls.avalanche;
+  
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_getBalance",
+        params: [address, "latest"]
+      })
+    });
+    const data = await res.json();
+    return BigInt(data.result || "0x0");
+  } catch (e) {
+    console.error("fetchNativeBalance error:", e);
+    return 0n;
+  }
 }
 
 /** Parsea valor a BigInt (Glacier puede enviar string, number o hex). */
@@ -80,12 +115,71 @@ function parseBigInt(val) {
 }
 
 /**
- * Extrae solo la información útil de cada transacción cruda (Glacier API).
- * Soporta datos en nativeTransaction o en la raíz del objeto.
+ * Resume ERC-20 más relevante para la wallet (como en Core: “9 USDC”, etc.).
  */
-function extractUsefulData(tx) {
+function summarizeErc20ForWallet(erc20Transfers, walletLower) {
+  if (!Array.isArray(erc20Transfers) || erc20Transfers.length === 0) return null;
+  const w = walletLower.toLowerCase();
+
+  const rows = erc20Transfers.map((t) => {
+    const from = String(t.from?.address ?? t.from ?? "").toLowerCase();
+    const to = String(t.to?.address ?? t.to ?? "").toLowerCase();
+    const tok = t.erc20Token ?? {};
+    const decimals = Number(tok.decimals ?? 18);
+    const rawVal = parseBigInt(t.value);
+    const amountHuman =
+      decimals > 0 ? Number(rawVal) / 10 ** Math.min(decimals, 36) : 0;
+    const unitPrice = tok.price?.value != null ? Number(tok.price.value) : null;
+    const valueUsd =
+      unitPrice != null && Number.isFinite(amountHuman)
+        ? amountHuman * unitPrice
+        : null;
+    return { from, to, amountHuman, symbol: tok.symbol || "?", valueUsd };
+  });
+
+  const involving = rows.filter((r) => r.from === w || r.to === w);
+  const pool = involving.length ? involving : rows;
+  if (pool.length === 0) return null;
+
+  pool.sort(
+    (a, b) =>
+      Math.abs(b.valueUsd ?? b.amountHuman ?? 0) -
+      Math.abs(a.valueUsd ?? a.amountHuman ?? 0)
+  );
+  const best = pool[0];
+  let direction = "neutral";
+  if (best.from === w) direction = "out";
+  else if (best.to === w) direction = "in";
+
+  return {
+    amountHuman: Math.round(best.amountHuman * 1e6) / 1e6,
+    symbol: best.symbol,
+    valueUsd:
+      best.valueUsd != null ? Math.round(best.valueUsd * 100) / 100 : null,
+    direction,
+  };
+}
+
+/**
+ * Extrae información útil de cada ítem de Glacier (native + erc20Transfers).
+ */
+function extractUsefulData(tx, walletAddressLower) {
   const native = tx.nativeTransaction ?? tx;
   const to = native.to ?? {};
+  const fromObj = native.from ?? {};
+  const method = native.method ?? {};
+
+  const gasUsed = parseBigInt(native.gasUsed);
+  const gasPrice = parseBigInt(native.gasPrice);
+  const effectiveGasPrice = parseBigInt(native.effectiveGasPrice);
+  const transactionFeeWei = parseBigInt(
+    native.transactionFee ?? native.fee ?? native.txFee
+  );
+
+  const primaryErc20 = summarizeErc20ForWallet(
+    tx.erc20Transfers,
+    walletAddressLower
+  );
 
   return {
     hash: native.txHash ?? native.hash ?? null,
@@ -94,15 +188,19 @@ function extractUsefulData(tx) {
       : native.timestamp
         ? Number(native.timestamp)
         : null,
+    from: (typeof fromObj === "object" ? fromObj.address : fromObj) ?? null,
     to: (typeof to === "object" ? to.address : to) ?? null,
     toName: typeof to === "object" ? to.name : null,
     toSymbol: typeof to === "object" ? to.symbol : null,
     value: parseBigInt(native.value),
-    gasUsed: parseBigInt(native.gasUsed),
-    gasPrice: parseBigInt(native.gasPrice),
+    gasUsed,
+    gasPrice,
+    effectiveGasPrice,
+    transactionFeeWei,
     gasLimit: parseBigInt(native.gasLimit),
-    callType: (native.method ?? {}).callType ?? "UNKNOWN",
-    methodHash: (native.method ?? {}).methodHash ?? "",
-    methodName: (native.method ?? {}).methodName ?? "",
+    callType: method.callType ?? "UNKNOWN",
+    methodHash: method.methodHash ?? "",
+    methodName: method.methodName ?? "",
+    primaryErc20,
   };
 }

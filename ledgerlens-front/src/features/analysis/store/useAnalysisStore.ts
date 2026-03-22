@@ -1,5 +1,9 @@
+import type { WalletClient } from "viem"
 import { create } from "zustand"
-import { fetchAnalysis as fetchAnalysisApi, type SupportedChain } from "@/lib/api"
+import {
+  fetchAnalysis as fetchAnalysisApi,
+  type SupportedChain,
+} from "@/lib/api"
 import type { AnalysisResult } from "@/lib/analysis.types"
 
 interface AnalysisState {
@@ -10,7 +14,7 @@ interface AnalysisState {
   error: string | null
   setWalletAddress: (address: string) => void
   setChain: (chain: SupportedChain) => void
-  fetchAnalysis: (address: string) => void
+  fetchAnalysis: (address: string, walletClient?: WalletClient | null) => void
   reset: () => void
 }
 
@@ -24,14 +28,14 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   setWalletAddress: (address) => set({ walletAddress: address }),
   setChain: (chain) => set({ chain }),
 
-  fetchAnalysis: async (address) => {
+  fetchAnalysis: async (address, walletClient) => {
     const trimmed = address.trim()
     if (!trimmed) return
 
     set({ isLoading: true, walletAddress: trimmed, analysisResult: null, error: null })
 
     try {
-      const result = await fetchAnalysisApi(trimmed, get().chain)
+      const result = await fetchAnalysisApi(trimmed, get().chain, walletClient)
       set({ isLoading: false, analysisResult: result })
     } catch (err) {
       set({

@@ -10,10 +10,16 @@
     "deploy:genlayer": "node scripts/deploy-genlayer.js"
   },
   "dependencies": {
+    "@payai/facilitator": "^2.3.4",
+    "@x402/core": "^2.7.0",
+    "@x402/evm": "^2.7.0",
+    "@x402/express": "^2.7.0",
+    "@x402/fetch": "^2.7.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "genlayer-js": "^0.23.0",
-    "openai": "^4.73.0"
+    "openai": "^4.73.0",
+    "viem": "^2.47.6"
   }
 }

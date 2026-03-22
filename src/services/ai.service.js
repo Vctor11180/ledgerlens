@@ -5,7 +5,9 @@
 
 import OpenAI from "openai";
 
-const SYSTEM_PROMPT = `Eres un auditor experto de blockchain. Analiza el siguiente resumen estadístico de las últimas 50 transacciones de una billetera en Avalanche. Debes clasificar la billetera en una de estas 3 categorías de 'identity': 'Verified Human User', 'High-Frequency Trading Bot', o 'Smart Contract Service'. También debes asignar un 'risk_score' del 0 al 100 (donde 100 es alto riesgo de bot/MEV) y generar una 'narrative' de 2 oraciones explicando por qué tomaste esa decisión basándote en los datos. Devuelve la respuesta ESTRICTAMENTE en este formato JSON, sin markdown ni texto adicional: { "identity": "...", "risk_score": 0, "narrative": "..." }`;
+const SYSTEM_PROMPT = `Eres un auditor experto de blockchain. Analiza el siguiente resumen estadístico de transacciones recientes de una billetera (la cantidad exacta viene en el texto; no asumas siempre 50). El desglose de "acciones" son etiquetas derivadas del indexador (p. ej. transfer nativo/ERC-20, "Contract call", "DEX router call", nombres de método): no son juicios de trading; "DEX router call" solo indica un selector típico de router, no que sea necesariamente un intercambio. Si el gas total en USD es 0 o muy bajo, puede deberse a datos incompletos del indexador, no a ausencia real de fees: no etiquetes como bot de alta frecuencia solo por eso; sé prudente y menciona la incertidumbre si los datos son escasos.
+
+Debes clasificar la billetera en una de estas 3 categorías de 'identity': 'Verified Human User', 'High-Frequency Trading Bot', o 'Smart Contract Service'. Asigna un 'risk_score' del 0 al 100 (100 = alto riesgo de bot/MEV) y una 'narrative' de 2 oraciones basada en el resumen. Devuelve ESTRICTAMENTE JSON sin markdown: { "identity": "...", "risk_score": 0, "narrative": "..." }`;
 
 /**
  * Envía el resumen estadístico a la IA y obtiene el veredicto.

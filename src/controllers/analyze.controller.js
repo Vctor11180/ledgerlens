@@ -2,7 +2,7 @@
  * Controlador principal: orquesta Avalanche → Agregador → IA y responde al Frontend
  */
 
-import { fetchTransactions, getSupportedChains } from "../services/avalanche.service.js";
+import { fetchTransactions, getSupportedChains, fetchNativeBalance } from "../services/avalanche.service.js";
 import { processRawTransactions } from "../services/aggregator.service.js";
 import { analyzeWalletBehavior } from "../services/ai.service.js";
 
@@ -56,9 +56,16 @@ export async function analyzeAddress(req, res) {
       formattedTransactions,
       statisticalSummary,
       gasEfficiency,
-    } = processRawTransactions(rawTxs, { chain: requestedChain });
+      wallet_summary
+    } = processRawTransactions(rawTxs, {
+      chain: requestedChain,
+      walletAddress: trimmed.toLowerCase(),
+    });
 
     const aiVerdict = await analyzeWalletBehavior(statisticalSummary);
+    const nativeBalanceWei = await fetchNativeBalance(trimmed, requestedChain);
+    // BigInt to native token (18 decimals)
+    const nativeBalance = Number(nativeBalanceWei) / 1e18;
 
     const response = {
       identity: aiVerdict.identity,
@@ -67,6 +74,10 @@ export async function analyzeAddress(req, res) {
       chain: requestedChain,
       transactions: formattedTransactions,
       gas_efficiency: gasEfficiency,
+      wallet_summary: {
+        ...wallet_summary,
+        current_balance_native: nativeBalance
+      }
     };
 
     return res.status(200).json(response);

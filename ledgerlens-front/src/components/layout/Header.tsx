@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react"
 import { Search, Loader2, Eye, Wallet, LogOut, ChevronDown } from "lucide-react"
 import {
   useBalance,
-  useChainId,
   useConnect,
   useConnection,
   useDisconnect,
@@ -11,17 +10,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAnalysisStore } from "@/features/analysis/store/useAnalysisStore"
+import { useRunAnalysis } from "@/features/analysis/hooks/useRunAnalysis"
+import type { SupportedChain } from "@/lib/api"
 import { chainIdForApp } from "@/wagmi"
 
-export function Header() {
+export function Header({ onRunAgent }: { onRunAgent?: (a?: string) => void }) {
   const [input, setInput] = useState("")
   const [walletMenuOpen, setWalletMenuOpen] = useState(false)
   const walletWrapRef = useRef<HTMLDivElement>(null)
-  const { isLoading, fetchAnalysis, reset, chain, setChain } = useAnalysisStore()
+  const { isLoading, reset, chain, setChain } = useAnalysisStore()
+  const runAnalysis = useRunAnalysis()
 
   const { address, status } = useConnection()
   const connected = status === "connected" && !!address
-  const chainId = useChainId()
   const { data: balance } = useBalance({ address: connected ? address : undefined })
   const { mutate: connect, connectors, isPending: isConnecting } = useConnect()
   const { mutateAsync: disconnectAsync, isPending: isDisconnecting } =
@@ -31,17 +32,6 @@ export function Header() {
   useEffect(() => {
     if (address) setInput(address)
   }, [address])
-
-  /** Al conectar, sugerir cambiar a la red del selector (Avalanche/Ethereum) si la wallet está en otra. */
-  useEffect(() => {
-    if (!connected || !chainId || isSwitching) return
-    const wantedChainId = chainIdForApp[chain]
-    if (chainId !== wantedChainId) {
-      switchChainAsync({ chainId: wantedChainId }).catch(() => {
-        /* usuario rechazó o red no añadida */
-      })
-    }
-  }, [connected, chainId, chain, switchChainAsync, isSwitching])
 
   useEffect(() => {
     if (!walletMenuOpen) return
@@ -60,14 +50,14 @@ export function Header() {
   const handleSearch = () => {
     const addr = input.trim()
     if (!addr) return
-    fetchAnalysis(addr)
+    void runAnalysis(addr)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleSearch()
   }
 
-  const handleChainSelect = (value: "avalanche" | "ethereum") => {
+  const handleChainSelect = (value: SupportedChain) => {
     setChain(value)
     if (!connected) return
     const chainId = chainIdForApp[value]
@@ -120,12 +110,13 @@ export function Header() {
           <select
             value={chain}
             onChange={(e) =>
-              handleChainSelect(e.target.value as "avalanche" | "ethereum")
+              handleChainSelect(e.target.value as SupportedChain)
             }
             disabled={isSwitching}
             className="h-10 rounded-md border border-slate-800 bg-slate-900/50 px-3 text-sm text-slate-200 disabled:opacity-50"
           >
-            <option value="avalanche">Avalanche</option>
+            <option value="avalanche">Avalanche (C-Chain)</option>
+            <option value="fuji">Avalanche Fuji (testnet)</option>
             <option value="ethereum">Ethereum</option>
           </select>
           <div className="relative flex-1">
@@ -141,16 +132,27 @@ export function Header() {
           <Button
             onClick={handleSearch}
             disabled={isLoading || !input.trim()}
-            className="h-10 shrink-0 bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-40"
+            className="h-10 shrink-0 bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-40 rounded-r-none"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : connected && input.trim().toLowerCase() === address?.toLowerCase() ? (
-              "Analizar mi wallet"
+              "Analyze Me"
             ) : (
               "Analyze"
             )}
           </Button>
+          {onRunAgent && (
+            <Button
+              type="button"
+              onClick={() => onRunAgent(input.trim())}
+              disabled={isLoading}
+              className="h-10 shrink-0 bg-emerald-500 text-slate-900 border-l border-emerald-600 font-bold px-4 hover:bg-emerald-400 rounded-l-none"
+              title="Autonomous AI Agent Audit (USDC Payment)"
+            >
+              🤖 AI Agent
+            </Button>
+          )}
         </div>
 
         <div className="relative shrink-0" ref={walletWrapRef}>
