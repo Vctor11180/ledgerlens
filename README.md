@@ -14,6 +14,17 @@
 | L1 Datos | Avalanche Glacier API (C-Chain + Ethereum) |
 | IA | Hugging Face (principal) → OpenAI (fallback) → GenLayer (opcional) |
 | Wallet | MetaMask / Core (Avalanche + Ethereum) |
+| Pagos API (opc.) | [x402](https://docs.x402.org/) + facilitator ([PayAI](https://facilitator.payai.network) por defecto; compatible Avalanche Fuji / C-Chain) |
+
+### Built for Avalanche C-Chain
+
+LedgerLens está pensado para **Avalanche**: datos vía [Glacier](https://developers.avacloud.io/), análisis en C-Chain o Ethereum, y opcionalmente **cobro por API con x402** en **Fuji** (testnet) o **mainnet** usando USDC (EIP-3009). Recursos útiles:
+
+- [Avalanche Builder Hub](https://build.avax.network/) — documentación y academy  
+- [x402 en Avalanche Academy](https://build.avax.network/academy/blockchain/x402-payment-infrastructure) — flujo HTTP 402, `X-PAYMENT`, facilitators  
+- [USDC en Fuji](https://build.avax.network/academy/blockchain/x402-payment-infrastructure/05-hands-on-implementation/01-environment-setup) — contrato de prueba y faucet (Academy)
+
+Variables principales: `X402_ENABLED`, `X402_PAY_TO`, `X402_AMOUNT_USDC`, `X402_NETWORK` (ver `.env.example`). Con `X402_ENABLED=false` el análisis sigue siendo gratuito como antes.
 
 ---
 

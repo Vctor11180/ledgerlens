@@ -8,9 +8,14 @@
 
 ## Red (Avalanche / Ethereum)
 
-- El selector **Avalanche | Ethereum** define **qué cadena consulta el análisis** en el backend.
-- Si la wallet está conectada, la app **pide cambiar de red** en la wallet para alinearla con la opción elegida.
-- Si la wallet y el selector “no coinciden”, **cambia el selector** o **acepta el cambio de red** en MetaMask/Core.
+- El selector **Avalanche | Ethereum** define **qué cadena consulta el análisis** en el backend (Glacier).
+- La wallet **no tiene que estar en la misma red** que el análisis: solo hace falta para firmar pagos x402.
+
+## Pago x402 (USDC) — Fuji testnet
+
+Si el backend tiene `X402_ENABLED=true`, al pulsar **Analyze** con wallet conectada la app intenta cambiar a la red de cobro configurada (`VITE_X402_NETWORK`: **fuji** o **mainnet** en Avalanche). Necesitas USDC en esa red.
+
+- **USDC en Fuji (testnet):** contrato típico `0x5425890298aed601595a70AB815c96711a31Bc65`. Faucet y pasos en la [Academy x402 / environment setup](https://build.avax.network/academy/blockchain/x402-payment-infrastructure/05-hands-on-implementation/01-environment-setup) y recursos del [Builder Hub](https://build.avax.network/).
 
 ## En MetaMask / Core (extensión)
 

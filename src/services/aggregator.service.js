@@ -1,38 +1,134 @@
 /**
- * Servicio agregador: transforma data cruda de Avalanche al formato del Frontend
+ * Servicio agregador: transforma data cruda de Avalanche al formato del Frontend.
+ * Las etiquetas salen de datos del indexador (Glacier): methodName, callType, selector, ERC-20.
+ * No usamos categorías genéricas tipo “mock”; DEX por selector → “DEX router call”.
  */
 
-const ACTION_MAP = {
-  NATIVE_TRANSFER: "Transfer",
-  CONTRACT_CALL: "Swap", // Fallback; METHOD_HASHES puede refinarlo
-};
-
-// Method hashes comunes (primeros 4 bytes del selector)
-const METHOD_HASHES = {
-  "0xa9059cbb": "Transfer",      // ERC20 transfer
-  "0x23b872dd": "Transfer",      // ERC721 safeTransferFrom
-  "0x095ea7b3": "Approve",       // ERC20 approve
-  "0x38ed1739": "Swap",          // Uniswap V2 swapExactTokensForTokens
-  "0x8803dbee": "Swap",          // Uniswap V2 swapTokensForExactTokens
-  "0x5c11d795": "Swap",          // Uniswap V2 swapExactTokensForTokens (variant)
-  "0x7ff36ab5": "Swap",          // Uniswap V2 swapExactETHForTokens
-  "0x18cbafe5": "Swap",          // Uniswap V2 swapExactTokensForETH
-  "0xfb3bdb41": "Swap",          // Uniswap V2 swapETHForExactTokens
-  "0x04e45aaf": "Bridge",        // Bridge (ej. Avalanche Bridge)
-  "0x52aa4b22": "Bridge",
-};
-
 const AVAX_DECIMALS = 18n;
-const GWEI = 10n ** 9n;
+
+/** Evita que montos bajos (menos de ~1 céntimo USD) se redondeen a $0.00 en la lista tipo wallet. */
+function roundUsd(usd) {
+  if (!Number.isFinite(usd) || usd === 0) return 0;
+  if (usd < 0.01) return Math.round(usd * 1e6) / 1e6;
+  if (usd < 1) return Math.round(usd * 1e4) / 1e4;
+  return Math.round(usd * 100) / 100;
+}
+
+const DEX_SELECTORS = new Set([
+  "0x38ed1739",
+  "0x8803dbee",
+  "0x5c11d795",
+  "0x7ff36ab5",
+  "0x18cbafe5",
+  "0xfb3bdb41",
+]);
+
+function normalizeCallType(ct) {
+  let x = String(ct ?? "").toUpperCase();
+  if (x === "CONTRACTCALL") return "CONTRACT_CALL";
+  if (x === "NATIVETRANSFER") return "NATIVE_TRANSFER";
+  return x;
+}
+
+function truncateLabel(s, max = 72) {
+  const t = String(s).trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
+
+/** methodName del indexador a veces es solo “Contract Call”; preferimos el ERC-20 si hay movimiento. */
+function isVagueMethodName(name) {
+  const t = String(name || "").trim();
+  if (!t) return true;
+  return /^(contract\s*call|unknown|call|contractcall)$/i.test(t);
+}
+
+/**
+ * Texto mostrado en la columna Action: solo inferencia a partir de datos Glacier.
+ */
+function deriveActionLabel(raw, chain) {
+  const hash = (raw.methodHash || "").toLowerCase();
+  const callType = normalizeCallType(raw.callType);
+  const methodName = String(raw.methodName || "").trim();
+  const nativeSym = chain === "ethereum" ? "ETH" : "AVAX";
+  const erc20 = raw.primaryErc20;
+
+  if (hash === "0xa9059cbb") {
+    return erc20?.symbol ? `${erc20.symbol} · transfer` : "ERC-20 transfer";
+  }
+  if (hash === "0x23b872dd") {
+    return erc20?.symbol ? `${erc20.symbol} · transfer` : "ERC-721 / token transfer";
+  }
+  if (hash === "0x095ea7b3") return "Token approve";
+
+  if (DEX_SELECTORS.has(hash)) return "DEX router call";
+
+  if (hash === "0x04e45aaf" || hash === "0x52aa4b22") return "Bridge call";
+
+  if (callType === "NATIVE_TRANSFER" || methodName === "Native Transfer") {
+    return `${nativeSym} transfer`;
+  }
+
+  /**
+   * Tx al contrato del token (selector transfer) vs tx a otra app que ejecuta
+   * transfer interno: si hay movimiento ERC-20 y el nombre del método es genérico,
+   * alineamos con wallets tipo Core (“N USDC …”).
+   */
+  if (erc20?.symbol && (erc20.amountHuman ?? 0) > 0 && isVagueMethodName(methodName)) {
+    return `${erc20.symbol} · transfer`;
+  }
+
+  if (methodName && methodName !== "Native Transfer" && !isVagueMethodName(methodName)) {
+    return truncateLabel(methodName);
+  }
+
+  if (erc20?.symbol && (erc20.amountHuman ?? 0) > 0) {
+    return `${erc20.symbol} · transfer`;
+  }
+
+  if (callType === "CONTRACT_CALL" || callType === "CALL") {
+    return "Contract call";
+  }
+
+  if (callType === "TRANSFER") {
+    return `${nativeSym} transfer`;
+  }
+
+  return "On-chain";
+}
+
+/**
+ * Entrada/salida respecto a la wallet analizada (como en Core: enviado / recibido).
+ */
+function deriveFlow(raw, walletLower) {
+  if (!walletLower) return "neutral";
+  const w = walletLower.toLowerCase();
+  const from = (raw.from || "").toLowerCase();
+  const to = (raw.to || "").toLowerCase();
+  const e = raw.primaryErc20;
+
+  if (e?.direction === "in" || e?.direction === "out") {
+    return e.direction;
+  }
+
+  const valueWei = raw.value ?? 0n;
+  if (valueWei > 0n) {
+    if (from === w) return "out";
+    if (to === w) return "in";
+  }
+
+  return "neutral";
+}
 
 /**
  * Procesa transacciones crudas y devuelve el formato esperado por el Frontend + resumen para la IA
  * @param {Array} rawTxArray - Array de objetos extraídos por avalanche.service
- * @param {{ chain?: string }} opts - chain: "avalanche" | "ethereum" para precio nativo correcto
+ * @param {{ chain?: string, walletAddress?: string }} opts - walletAddress: para sentido in/out
  * @returns {{ formattedTransactions: Array, statisticalSummary: string, gasEfficiency: Array }}
  */
 export function processRawTransactions(rawTxArray, opts = {}) {
   const chain = (opts.chain || "avalanche").toLowerCase();
+  const walletLower = (opts.walletAddress || "").toLowerCase();
   const nativeUsdPrice =
     chain === "ethereum"
       ? parseFloat(process.env.ETH_USD_PRICE || "3500")
@@ -42,29 +138,63 @@ export function processRawTransactions(rawTxArray, opts = {}) {
   const addressCount = new Map();
   const actionCount = new Map();
 
-  for (const raw of rawTxArray) {
-    const action = resolveAction(raw);
+  let totalReceivedUsd = 0;
+  let totalSentUsd = 0;
+  let totalGasSpentUsd = 0;
+
+  const containsCyrillic = (str) => /[\u0400-\u04FF]/.test(str || "");
+
+  for (let txIndex = 0; txIndex < rawTxArray.length; txIndex++) {
+    const raw = rawTxArray[txIndex];
+    const action = deriveActionLabel(raw, chain);
     const counterparty = formatCounterparty(raw);
+    const flow = deriveFlow(raw, walletLower);
     const gasUsd = calculateGasUsd(raw, nativeUsdPrice);
-    const { valueNative, valueUsd } = calculateValue(raw, nativeUsdPrice);
+    const values = mergeNativeAndErc20Display(raw, nativeUsdPrice, nativeSymbol);
     const time = raw.timestamp
       ? new Date(raw.timestamp * 1000).toISOString()
       : new Date().toISOString();
 
+    const isZeroValueSpam = 
+      (values.valueNative === 0 || values.valueNative === undefined) &&
+      (values.tokenAmount === 0 || values.tokenAmount === undefined) &&
+      action.toLowerCase().includes("transfer");
+
+    const isScam = containsCyrillic(values.tokenSymbol) || containsCyrillic(action) || isZeroValueSpam;
+    const gasPaidByMe = (raw.from || "").toLowerCase() === walletLower;
+
     formattedTransactions.push({
-      id: raw.hash || `0x${Math.random().toString(16).slice(2, 10)}`,
+      id: raw.hash || `tx-${txIndex}`,
       time,
       action,
+      flow,
       counterparty,
-      gas_usd: Math.round(gasUsd * 100) / 100,
-      value_native: valueNative,
-      value_usd: valueUsd,
-      native_symbol: nativeSymbol,
+      gas_usd: roundUsd(gasUsd),
+      value_native: values.valueNative,
+      value_usd: values.valueUsd,
+      native_symbol: values.nativeSymbol,
+      token_amount: values.tokenAmount,
+      token_symbol: values.tokenSymbol,
+      token_value_usd: values.tokenValueUsd,
+      is_scam: isScam,
+      gas_paid_by_me: gasPaidByMe,
     });
 
-    const addr = (raw.to || "unknown").toLowerCase();
-    addressCount.set(addr, (addressCount.get(addr) ?? 0) + 1);
-    actionCount.set(action, (actionCount.get(action) ?? 0) + 1);
+    if (!isScam) {
+      if (gasPaidByMe) {
+        totalGasSpentUsd += gasUsd;
+      }
+
+      if (flow === "in") {
+        totalReceivedUsd += (values.valueUsd || 0);
+      } else if (flow === "out") {
+        totalSentUsd += (values.valueUsd || 0);
+      }
+      
+      const addr = (raw.to || "unknown").toLowerCase();
+      addressCount.set(addr, (addressCount.get(addr) ?? 0) + 1);
+      actionCount.set(action, (actionCount.get(action) ?? 0) + 1);
+    }
   }
 
   const statisticalSummary = buildStatisticalSummary(
@@ -80,14 +210,12 @@ export function processRawTransactions(rawTxArray, opts = {}) {
     formattedTransactions,
     statisticalSummary,
     gasEfficiency,
+    wallet_summary: {
+      total_received_usd: roundUsd(totalReceivedUsd),
+      total_sent_usd: roundUsd(totalSentUsd),
+      total_gas_spent_usd: roundUsd(totalGasSpentUsd),
+    }
   };
-}
-
-function resolveAction(raw) {
-  const hash = (raw.methodHash || "").toLowerCase();
-  if (METHOD_HASHES[hash]) return METHOD_HASHES[hash];
-  const callType = raw.callType ?? "";
-  return ACTION_MAP[callType] ?? "Swap";
 }
 
 function formatCounterparty(raw) {
@@ -99,8 +227,17 @@ function formatCounterparty(raw) {
 
 function calculateGasUsd(raw, avaxUsdPrice) {
   const gasUsed = raw.gasUsed ?? 0n;
-  const gasPrice = raw.gasPrice ?? 0n;
-  const costWei = gasUsed * gasPrice;
+  let gasPrice = raw.gasPrice ?? 0n;
+  if (gasPrice === 0n && raw.effectiveGasPrice) {
+    gasPrice = raw.effectiveGasPrice;
+  }
+
+  let costWei = gasUsed * gasPrice;
+  /** Fee total reportado por el indexador (si gasUsed*gasPrice no está). */
+  if (costWei === 0n && raw.transactionFeeWei && raw.transactionFeeWei > 0n) {
+    costWei = raw.transactionFeeWei;
+  }
+
   const costAvax = Number(costWei) / Number(10n ** AVAX_DECIMALS);
   return costAvax * avaxUsdPrice;
 }
@@ -112,7 +249,35 @@ function calculateValue(raw, nativeUsdPrice) {
   const valueUsd = valueNative * nativeUsdPrice;
   return {
     valueNative: Math.round(valueNative * 1e6) / 1e6,
-    valueUsd: Math.round(valueUsd * 100) / 100,
+    valueUsd: roundUsd(valueUsd),
+  };
+}
+
+/**
+ * Glacier incluye ERC-20 en `erc20Transfers`; el valor nativo suele ser 0 en “contract calls” USDC.
+ */
+function mergeNativeAndErc20Display(raw, nativeUsdPrice, nativeSymbol) {
+  const n = calculateValue(raw, nativeUsdPrice);
+  const e = raw.primaryErc20;
+  if (!e || !(e.amountHuman > 0)) {
+    return {
+      valueNative: n.valueNative,
+      valueUsd: n.valueUsd,
+      nativeSymbol,
+      tokenAmount: undefined,
+      tokenSymbol: undefined,
+      tokenValueUsd: undefined,
+    };
+  }
+  return {
+    valueNative: n.valueNative,
+    /** USD total fila: nativo + token si hay precio en Glacier */
+    valueUsd: roundUsd(n.valueUsd + (e.valueUsd ?? 0)),
+    nativeSymbol,
+    tokenAmount: e.amountHuman,
+    tokenSymbol: e.symbol,
+    tokenValueUsd:
+      e.valueUsd != null ? roundUsd(e.valueUsd) : undefined,
   };
 }
 
@@ -138,8 +303,13 @@ function buildStatisticalSummary(
     .map(([action, count]) => `${action}: ${count}`)
     .join("; ");
 
-  const chainLabel = chain === "ethereum" ? "Ethereum" : "Avalanche C-Chain";
-  return `Resumen de las últimas ${totalTx} transacciones de una billetera en ${chainLabel}. Total gas gastado: $${totalGasUsd.toFixed(2)} USD. Volumen nativo estimado: $${totalValueUsd.toFixed(2)} USD. Gas promedio por tx: $${avgGasUsd} USD. Direcciones más frecuentes: ${topAddresses || "N/A"}. Desglose de acciones: ${actionBreakdown || "N/A"}.`;
+  const chainLabel =
+    chain === "ethereum"
+      ? "Ethereum"
+      : chain === "fuji"
+        ? "Avalanche Fuji (testnet)"
+        : "Avalanche C-Chain (mainnet)";
+  return `Resumen de las últimas ${totalTx} transacciones de una billetera en ${chainLabel}. Total gas gastado: $${totalGasUsd.toFixed(2)} USD. Volumen estimado (AVAX/ETH nativo + ERC-20 con precio del indexador): $${totalValueUsd.toFixed(2)} USD. Gas promedio por tx: $${avgGasUsd} USD. Direcciones más frecuentes: ${topAddresses || "N/A"}. Desglose de acciones: ${actionBreakdown || "N/A"}.`;
 }
 
 /**
@@ -150,6 +320,7 @@ function buildGasEfficiency(formattedTransactions) {
   const byHour = new Map();
 
   for (const tx of formattedTransactions) {
+    if (tx.is_scam || !tx.gas_paid_by_me) continue;
     const date = new Date(tx.time);
     const hourKey = `${String(date.getUTCHours()).padStart(2, "0")}:00`;
     const current = byHour.get(hourKey) ?? { totalGas: 0, count: 0 };
@@ -167,7 +338,7 @@ function buildGasEfficiency(formattedTransactions) {
     const entry = byHour.get(hour) ?? { totalGas: 0, count: 0 };
     return {
       hour,
-      gas_usd: Math.round(entry.totalGas * 100) / 100,
+      gas_usd: roundUsd(entry.totalGas),
       tx_count: entry.count,
     };
   });
