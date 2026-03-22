@@ -11,7 +11,7 @@
 | Recurso | URL |
 |---------|-----|
 | **Repositorio** | [github.com/Kenyi001/ledgerlens](https://github.com/Kenyi001/ledgerlens) |
-| **Live Demo (Vercel)** | `https://[tu-proyecto].vercel.app` — tras desplegar desde el repo |
+| **Live Demo (Vercel)** | [ledgerlens-backend.vercel.app](https://ledgerlens-backend.vercel.app) |
 | **Documentación** | [HACKATHON.md](./HACKATHON.md) · [X402.md](./X402.md) · [GENLAYER.md](./GENLAYER.md) · [CHECKLIST.md](./CHECKLIST.md) |
 
 ---
