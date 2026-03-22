@@ -4,7 +4,7 @@
  */
 
 import { createClient, createAccount } from "genlayer-js";
-import { testnetBradbury } from "genlayer-js/chains";
+import { studionet } from "genlayer-js/chains";
 import { TransactionStatus } from "genlayer-js/types";
 
 /**
@@ -24,7 +24,7 @@ export async function analyzeWithGenLayer(statisticalSummary) {
 
   const account = createAccount(privateKey);
   const client = createClient({
-    chain: testnetBradbury,
+    chain: studionet,
     account,
   });
 

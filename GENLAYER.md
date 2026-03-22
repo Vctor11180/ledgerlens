@@ -23,41 +23,61 @@ Usa `gl.vm.run_nondet_unsafe` con validador para respuestas JSON no determinista
 
 ## Desplegar el contrato
 
-### 1. GenLayer CLI
+### Opción recomendada: StudioNet (sin tokens)
+
+**StudioNet** no requiere GEN del faucet. Solo necesitas una wallet (cualquier private key válida).
+
+**Paso 1 — Crear wallet**
 
 ```bash
-npm install -g @genlayer/cli
-genlayer deploy --contract contracts/wallet_analyzer.py --args
+npm run genlayer:wallet
 ```
 
-### 2. GenLayer Studio
+Copia la **private key** e añádela al `.env`:
+
+```
+GENLAYER_PRIVATE_KEY=0x...
+```
+
+**Paso 2 — Desplegar**
+
+```bash
+npm run deploy:genlayer
+```
+
+El script usa **StudioNet** por defecto (sin tokens). Al terminar se imprimirá:
+
+```
+GENLAYER_CONTRACT_ADDRESS=0x...
+```
+
+Cópiala y añádela al `.env`.
+
+**Paso 3 — Reiniciar backend**
+
+```bash
+npm run dev
+```
+
+### Alternativa: Testnet Bradbury (requiere GEN)
+
+Si quieres desplegar en **Bradbury** (testnet con tokens reales), edita `scripts/deploy-genlayer.js` y cambia `studionet` por `testnetBradbury`. Necesitas obtener 100 GEN del [faucet](https://testnet-faucet.genlayer.foundation/) (puede estar vacío).
+
+---
+
+### Alternativa: GenLayer Studio
 
 1. Entra a [GenLayer Studio](https://studio.genlayer.com)
 2. Crea proyecto y pega el código de `contracts/wallet_analyzer.py`
 3. Despliega en **Testnet Bradbury** (recomendado para LLM)
-4. Copia la dirección del contrato
+4. Copia la dirección del contrato y ponla en `GENLAYER_CONTRACT_ADDRESS`
+5. La `GENLAYER_PRIVATE_KEY` debe ser de una wallet que pueda llamar `analyze_wallet` (si usas Studio para deploy, necesitas una key para que el backend ejecute las llamadas)
 
-### 3. Deploy script con genlayer-js
+### Alternativa: GenLayer CLI
 
-```js
-import { createClient, createAccount } from "genlayer-js";
-import { testnetBradbury } from "genlayer-js/chains";
-import { readFileSync } from "fs";
-import { TransactionStatus } from "genlayer-js/types";
-
-const account = createAccount(process.env.GENLAYER_PRIVATE_KEY);
-const client = createClient({ chain: testnetBradbury, account });
-await client.initializeConsensusSmartContract();
-
-const code = readFileSync("./contracts/wallet_analyzer.py", "utf-8");
-const hash = await client.deployContract({ code, args: [], leaderOnly: false });
-const receipt = await client.waitForTransactionReceipt({
-  hash,
-  status: TransactionStatus.ACCEPTED,
-  retries: 60,
-  interval: 5000,
-});
-console.log("Contract:", receipt.data?.contract_address);
+```bash
+npm install -g @genlayer/cli
+genlayer deploy --contract contracts/wallet_analyzer.py --args
 ```
 
 ## Configuración Backend
@@ -107,12 +127,12 @@ Tanto GenLayer como OpenAI devuelven `identity`, `risk_score` y `narrative` en e
 
 ## Redes GenLayer
 
-| Red             | Uso                                  |
-|-----------------|--------------------------------------|
-| localnet        | Desarrollo local                     |
-| studionet       | Prototipado en equipo                |
-| testnetAsimov   | Infraestructura y estabilidad        |
-| testnetBradbury | Cargas de trabajo LLM reales (recomendado) |
+| Red             | Uso                                  | Tokens |
+|-----------------|--------------------------------------|--------|
+| studionet       | Sandbox compartido, **sin tokens**   | No     |
+| localnet        | Desarrollo local (Docker)            | No     |
+| testnetBradbury | LLM real, producción testnet         | Sí (faucet) |
+| testnetAsimov   | Infraestructura y estabilidad        | Sí     |
 
 ## Referencias
 

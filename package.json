@@ -7,7 +7,12 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "deploy:genlayer": "node scripts/deploy-genlayer.js"
+    "genlayer:wallet": "node scripts/genlayer-wallet.js",
+    "deploy:genlayer": "node scripts/deploy-genlayer.js",
+    "validate": "node scripts/validate.js",
+    "verify:genlayer": "node scripts/verify-genlayer.js",
+    "validate:build": "cd ledgerlens-front && npm run build",
+    "validate:full": "npm run validate:build && npm run validate"
   },
   "dependencies": {
     "cors": "^2.8.5",

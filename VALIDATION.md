@@ -1,5 +1,29 @@
 # Validación: datos on-chain vs demo
 
+## Validación automatizada
+
+```bash
+# 1. GenLayer (contrato y conexión)
+npm run verify:genlayer
+
+# 2. Build del frontend
+npm run validate:build
+
+# 3. Backend (con servidor corriendo en otra terminal)
+npm run dev          # Terminal 1
+npm run validate     # Terminal 2
+```
+
+| Comando | Qué valida |
+|---------|------------|
+| `npm run verify:genlayer` | Lectura/escritura del contrato en StudioNet |
+| `npm run validate:build` | Frontend compila sin errores (tsc + vite build) |
+| `npm run validate` | `/health`, `/api/analyze` (Avalanche), dirección inválida → 400 |
+
+**Nota:** Glacier API puede devolver 404 para `chain=ethereum` según el plan; Avalanche C-Chain (43114) está soportado.
+
+---
+
 ## Origen de los datos
 
 | Capa | Fuente | ¿Blockchain real? |

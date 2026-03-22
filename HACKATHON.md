@@ -5,7 +5,7 @@
 | Track | Requisitos | Estado LedgerLens |
 |-------|------------|-------------------|
 | **Avalanche** | Glacier API, C-Chain, build.avax.network | ✅ Glacier, Avalanche C-Chain + Ethereum |
-| **GenLayer** | Intelligent Contract, Testnet Bradbury, Optimistic Democracy | ✅ Contrato listo, deploy pendiente |
+| **GenLayer** | Intelligent Contract, Testnet Bradbury, Optimistic Democracy | ✅ Contrato desplegado en StudioNet |
 
 ---
 
@@ -34,14 +34,13 @@
 | `GENLAYER_PRIVATE_KEY` | Wallet en GenLayer Testnet Bradbury | Deploy del contrato + llamadas |
 | `GENLAYER_CONTRACT_ADDRESS` | Salida de `npm run deploy:genlayer` | Dirección del contrato desplegado |
 
-**Pasos para GenLayer:**
+**Pasos para GenLayer (StudioNet, sin tokens):**
 
-1. Crear wallet en [GenLayer Testnet Bradbury](https://portal.genlayer.foundation/) y obtener fondos de faucet si hace falta.
-2. Exportar clave privada (formato `0x...`).
-3. Añadir a `.env`: `GENLAYER_PRIVATE_KEY=0x...`
-4. Ejecutar: `npm run deploy:genlayer`
-5. Copiar la dirección impresa y añadir: `GENLAYER_CONTRACT_ADDRESS=0x...`
-6. Reiniciar backend.
+1. Ejecutar `npm run genlayer:wallet` para crear una wallet.
+2. Añadir a `.env`: `GENLAYER_PRIVATE_KEY=0x...`
+3. Ejecutar: `npm run deploy:genlayer` (usa StudioNet por defecto)
+4. Copiar la dirección impresa y añadir: `GENLAYER_CONTRACT_ADDRESS=0x...`
+5. Reiniciar backend.
 
 ---
 

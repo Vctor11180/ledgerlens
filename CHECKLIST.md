@@ -8,7 +8,7 @@
 |------|--------|
 | Backend Express + Glacier API | ✅ |
 | Soporte Avalanche + Ethereum | ✅ |
-| IA: Hugging Face → OpenAI fallback | ✅ |
+| IA: GenLayer (StudioNet) → Hugging Face → OpenAI fallback | ✅ |
 | Frontend React + Vite + TypeScript | ✅ |
 | Conexión wallet (wagmi: MetaMask, Core) | ✅ |
 | Balance y "Analizar mi wallet" | ✅ |
@@ -49,6 +49,7 @@ En [vercel.com](https://vercel.com) → tu proyecto → **Settings** → **Envir
 |----------|-------------|
 | `GLACIER_API_KEY` | Sí |
 | `HUGGINGFACE_API_KEY` o `OPENAI_API_KEY` | Sí (al menos una) |
+| `GENLAYER_CONTRACT_ADDRESS` + `GENLAYER_PRIVATE_KEY` | Opcional (para IA descentralizada) |
 
 Luego **Redeploy** para que apliquen.
 
@@ -70,7 +71,9 @@ Luego **Redeploy** para que apliquen.
 
 ## Probar que todo funciona
 
-1. Backend: `npm run dev` → `http://localhost:3001/api/health` devuelve `{"status":"ok"}`.
-2. Frontend: `cd ledgerlens-front && npm run dev` → abre `http://localhost:5173`.
-3. Pega una dirección (ej. `0x8dc08e5055e49b6F9d96aDC4AC277fDe44028367`) y clic **Analyze**.
-4. O conecta wallet y usa **Analizar mi wallet**.
+1. **GenLayer:** `npm run verify:genlayer` — comprueba contrato en StudioNet.
+2. **Backend:** `npm run dev` → `http://localhost:3001/api/health` devuelve `{"status":"ok"}`.
+3. **Validación API:** `npm run validate` (con backend corriendo).
+4. **Frontend:** `cd ledgerlens-front && npm run dev` → abre `http://localhost:5173`.
+5. Pega una dirección (ej. `0x8dc08e5055e49b6F9d96aDC4AC277fDe44028367`) y clic **Analyze**.
+6. O conecta wallet y usa **Analizar mi wallet**.
