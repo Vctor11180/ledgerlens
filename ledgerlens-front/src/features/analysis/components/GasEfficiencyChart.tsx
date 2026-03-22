@@ -1,6 +1,6 @@
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -12,32 +12,61 @@ import type { GasDataPoint } from "@/lib/analysis.types"
 
 interface GasEfficiencyChartProps {
   data: GasDataPoint[]
+  chain?: string
 }
 
-export function GasEfficiencyChart({ data }: GasEfficiencyChartProps) {
+const chartData = (data: GasDataPoint[]) =>
+  data.map((d) => ({
+    ...d,
+    xKey: d.label || d.hour || "-",
+  }))
+
+const NATIVE_SYMBOL: Record<string, string> = {
+  avalanche: "AVAX",
+  fuji: "AVAX",
+  ethereum: "ETH",
+}
+
+export function GasEfficiencyChart({ data, chain = "avalanche" }: GasEfficiencyChartProps) {
+  const plotData = chartData(data).filter((d) => d.label !== "Sin datos" || d.gas_usd > 0)
+  const totalGas = plotData.reduce((s, d) => s + (d.gas_usd || 0), 0)
+  const totalTxs = plotData.reduce((s, d) => s + (d.tx_count ?? 1), 0)
+  const symbol = NATIVE_SYMBOL[chain] ?? "AVAX/ETH"
+
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-6">
       <h3 className="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-400">
-        Gas gastado por hora (UTC) — datos reales on-chain
+        Gas a lo largo del tiempo
       </h3>
-      <p className="mb-4 text-xs text-slate-600">
-        Total USD de gas por franja horaria, calculado con gas usado × precio
-        nativo (AVAX/ETH). Solo datos de tus transacciones, sin estimados.
+      <p className="mb-2 text-xs text-slate-600">
+        Gas (USD) por transacción ordenada cronológicamente. Cálculo: gas usado ×
+        precio nativo ({symbol}). Solo tus txs, sin estimados.
       </p>
-      <div className="h-[260px] w-full">
+      <div className="mb-4 flex gap-4 text-xs">
+        <span className="text-slate-500">
+          Total gas: <strong className="text-slate-300">${totalGas.toFixed(2)}</strong>
+        </span>
+        <span className="text-slate-500">
+          Transacciones: <strong className="text-slate-300">{totalTxs}</strong>
+        </span>
+      </div>
+      <div className="relative h-[260px] w-full">
+        {plotData.length === 0 ? (
+          <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-900/30 text-sm text-slate-500">
+            No hay transacciones con gas para mostrar
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="gasWallet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+          <BarChart
+            data={plotData}
+            margin={{ top: 10, right: 10, left: 5, bottom: 15 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
             <XAxis
-              dataKey="hour"
+              dataKey="xKey"
               stroke="#475569"
-              tick={{ fill: "#94a3b8", fontSize: 12 }}
+              tick={{ fill: "#94a3b8", fontSize: 10 }}
+              interval={plotData.length > 12 ? Math.max(0, Math.floor(plotData.length / 6) - 1) : 0}
             />
             <YAxis
               stroke="#475569"
@@ -51,27 +80,24 @@ export function GasEfficiencyChart({ data }: GasEfficiencyChartProps) {
                 borderRadius: "8px",
                 color: "#e2e8f0",
               }}
-              formatter={(value, name, props) => {
-                const payload = props?.payload
-                const extra =
-                  payload?.tx_count != null
-                    ? ` (${payload.tx_count} txs)`
-                    : ""
-                return [`$${Number(value).toFixed(2)}${extra}`, name]
+              formatter={(value, _name, props) => {
+                const p = props?.payload
+                const txs = p?.tx_count != null ? ` · ${p.tx_count} txs` : ""
+                const act = p?.action ? ` · ${p.action}` : ""
+                return [`$${Number(value).toFixed(2)}${txs}${act}`, "Gas (USD)"]
               }}
-              labelFormatter={(label) => `${label} UTC`}
+              labelFormatter={(label) => `Fecha: ${label}`}
             />
             <Legend wrapperStyle={{ color: "#94a3b8", fontSize: "12px" }} />
-            <Area
-              type="monotone"
+            <Bar
               dataKey="gas_usd"
               name="Gas (USD)"
-              stroke="#ef4444"
-              fill="url(#gasWallet)"
-              strokeWidth={2}
+              fill="#ef4444"
+              radius={[2, 2, 0, 0]}
             />
-          </AreaChart>
+          </BarChart>
         </ResponsiveContainer>
+        )}
       </div>
     </div>
   )

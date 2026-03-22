@@ -136,7 +136,7 @@ El frontend y la API (`/api/analyze/:address`) comparten el mismo dominio.
   "transactions": [
     { "id": "0x...", "time": "…", "action": "Swap|Transfer|Approve|Bridge", "counterparty": "…", "gas_usd": 1.23, "value_native": 0.5, "value_usd": 17.5, "native_symbol": "AVAX" }
   ],
-  "gas_efficiency": [ { "hour": "00:00", "gas_usd": 0, "avg_network": 0.21 } ]
+  "gas_efficiency": [ { "label": "20 mar 15:30", "time": "2025-03-20T15:30:00Z", "gas_usd": 0.12, "tx_count": 1, "action": "Swap" } ]
 }
 ```
 

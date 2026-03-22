@@ -137,8 +137,9 @@ export function TransactionTable({ transactions, chain }: TransactionTableProps)
           <button
             onClick={() => setShowScam((s) => !s)}
             className="self-start sm:self-auto rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-medium text-orange-400 transition-colors hover:bg-orange-500/20"
+            title="Incluye: posibles estafas (caracteres sospechosos) y transferencias sin valor (fallidas/spam)"
           >
-            {showScam ? "Ocultar" : "Ver"} {scamCount} intentos de estafa
+            {showScam ? "Ocultar" : "Ver"} {scamCount} sospechosas
           </button>
         )}
       </div>
@@ -210,8 +211,28 @@ function ActivityRow({ tx, chain }: { tx: Transaction; chain?: string }) {
               {title}
             </p>
             {tx.is_scam && (
-              <span className="shrink-0 rounded bg-orange-950/50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-400">
-                SCAM
+              <span
+                className={cn(
+                  "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                  tx.scam_reason === "zero_value"
+                    ? "bg-amber-950/50 text-amber-400"
+                    : "bg-orange-950/50 text-orange-400"
+                )}
+                title={
+                  tx.scam_reason === "cyrillic_token"
+                    ? "Token con caracteres sospechosos (posible estafa)"
+                    : tx.scam_reason === "cyrillic_action"
+                      ? "Etiqueta con caracteres sospechosos (posible estafa)"
+                      : tx.scam_reason === "zero_value"
+                        ? "Transferencia sin valor (fallida, spam o dust)"
+                        : "Posible actividad sospechosa"
+                }
+              >
+                {tx.scam_reason === "cyrillic_token" || tx.scam_reason === "cyrillic_action"
+                  ? "ESTAFA"
+                  : tx.scam_reason === "zero_value"
+                    ? "SIN VALOR"
+                    : "SCAM"}
               </span>
             )}
           </div>

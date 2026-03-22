@@ -5,7 +5,7 @@
 
 import "dotenv/config";
 import { createClient, createAccount } from "genlayer-js";
-import { studionet } from "genlayer-js/chains";
+import { testnetBradbury } from "genlayer-js/chains";
 import { TransactionStatus } from "genlayer-js/types";
 
 const TEST_SUMMARY =
@@ -23,11 +23,11 @@ async function main() {
   }
 
   console.log("Contrato:", addr);
-  console.log("Red: StudioNet");
+  console.log("Red: Testnet Bradbury");
   console.log("");
 
   const account = createAccount(pk);
-  const client = createClient({ chain: studionet, account });
+  const client = createClient({ chain: testnetBradbury, account });
 
   try {
     // 1. Leer estado actual (get_last_verdict)

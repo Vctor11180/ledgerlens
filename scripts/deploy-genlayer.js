@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 /**
- * Despliega el contrato WalletAnalyzer en GenLayer StudioNet (sin tokens).
- * Para Bradbury: cambia studionet por testnetBradbury + obtén GEN del faucet.
- * Uso: GENLAYER_PRIVATE_KEY=0x... node scripts/deploy-genlayer.js
+ * Despliega el contrato en GenLayer Testnet Bradbury.
+ * Requiere GEN en la wallet (GENLAYER_PRIVATE_KEY debe ser la key de 0x5032...e2c con 10 GEN).
  */
 
 import "dotenv/config";
 import { createClient, createAccount } from "genlayer-js";
-import { studionet } from "genlayer-js/chains";
+import { testnetBradbury } from "genlayer-js/chains";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -24,7 +23,7 @@ async function main() {
 
   const account = createAccount(privateKey);
   const client = createClient({
-    chain: studionet,
+    chain: testnetBradbury,
     account,
   });
 

@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { Header } from "./Header"
 import { useAnalysisStore } from "@/features/analysis/store/useAnalysisStore"
 import { useRunAnalysis } from "@/features/analysis/hooks/useRunAnalysis"
@@ -6,7 +5,7 @@ import { IdentityBadge } from "@/features/analysis/components/IdentityBadge"
 import { GasEfficiencyChart } from "@/features/analysis/components/GasEfficiencyChart"
 import { TransactionTable } from "@/features/analysis/components/TransactionTable"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Eye, Wallet, ChevronDown } from "lucide-react"
+import { Search, Eye, Wallet, Download, CreditCard } from "lucide-react"
 import { useConnection } from "wagmi"
 
 
@@ -31,11 +30,9 @@ function LoadingSkeleton() {
 
 function EmptyState({
   onAnalyzeMyWallet,
-  onRunAgent,
   hasConnectedWallet,
 }: {
   onAnalyzeMyWallet?: () => void
-  onRunAgent?: () => void
   hasConnectedWallet?: boolean
 }) {
   return (
@@ -72,15 +69,14 @@ function EmptyState({
           </span>
         </div>
       </div>
-      <div className="mt-8 border-t border-slate-800/60 pt-8 w-full max-w-md mx-auto">
-        <h3 className="text-sm font-semibold text-slate-300 mb-4 text-center">IA Agente Autónomo (x402)</h3>
-        <button
-          onClick={() => onRunAgent?.()}
-          className="inline-flex w-full justify-center items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-400 transition-all hover:bg-emerald-500/20 hover:scale-[1.02] shadow-[0_0_20px_rgba(16,185,129,0.1)] active:scale-95"
-        >
-          🤖 Ejecutar Escaneo con IA
-        </button>
-      </div>
+      {hasConnectedWallet && (
+        <div className="mt-4 flex max-w-md items-start gap-2 rounded-lg border border-emerald-500/20 bg-emerald-950/10 px-4 py-2 text-left text-xs text-slate-400">
+          <CreditCard className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+          <span>
+            <strong className="text-emerald-400">x402:</strong> Con wallet conectada puedes pagar análisis en USDC (Fuji/C-Chain) cuando el servidor requiera cobro.
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -94,6 +90,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 import type { AnalysisResult } from "@/lib/analysis.types"
+import { downloadReportPdf } from "@/lib/exportReport"
 
 function WalletStatsSummary({
   result,
@@ -138,65 +135,24 @@ export function DashboardLayout() {
   const { isLoading, analysisResult, walletAddress, error } = useAnalysisStore()
   const runAnalysis = useRunAnalysis()
   const { address } = useConnection()
-  
-  const [agentLogs, setAgentLogs] = useState<string[] | null>(null)
+
   const isMyWallet =
     !!address &&
     !!walletAddress &&
     address.toLowerCase() === walletAddress.toLowerCase()
 
-  const handleRunAgent = async (addrOverride?: string) => {
-    // Limpiar el resultado anterior para que se vea la terminal del agente
-    useAnalysisStore.setState({ analysisResult: null, error: null })
-    setAgentLogs(["Inicializando agente remoto en LedgerLens Network..."]);
-    try {
-      const url = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3001" : "");
-      const finalUrl = addrOverride ? `${url}/api/run-agent?address=${addrOverride}` : `${url}/api/run-agent`;
-      const res = await fetch(finalUrl);
-      const data = await res.json();
-      setAgentLogs(prev => [...(prev||[]), ...data.logs.filter((l:string) => !prev?.includes(l)) || ["Agente completó su tarea."]]);
-      if (data.report && data.targetWallet) {
-        const reportWithPmt = { ...data.report, payment_tx_hash: data.paymentHash };
-        useAnalysisStore.setState({ 
-          walletAddress: data.targetWallet, 
-          analysisResult: reportWithPmt, 
-          isLoading: false, 
-          error: null 
-        })
-        // No borramos los logs, los dejamos para la sección de 'Evidencia'
-      }
-    } catch (e: any) {
-      setAgentLogs(prev => [...(prev||[]), "❌ Error de conexión con el agente: " + e.message])
-    }
-  }
-
   return (
     <div className="flex min-h-screen flex-col bg-slate-950">
-      <Header onRunAgent={handleRunAgent} />
+      <Header />
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
-        {!isLoading && !analysisResult && !error && !agentLogs && (
+        {!isLoading && !analysisResult && !error && (
           <EmptyState
             hasConnectedWallet={!!address}
             onAnalyzeMyWallet={
               address ? () => void runAnalysis(address) : undefined
             }
-            onRunAgent={handleRunAgent}
           />
-        )}
-
-        {agentLogs && !analysisResult && (
-          <div className="mx-auto max-w-2xl rounded-xl border border-slate-800 bg-slate-950 p-6 font-mono text-sm text-slate-300">
-            <h3 className="mb-4 text-emerald-400 text-lg font-semibold tracking-tight animate-pulse">🤖 Ejecutando Agente Autónomo...</h3>
-            <div className="space-y-3 rounded-lg bg-black px-4 py-4 min-h-[160px]">
-              {agentLogs.map((l, i) => (
-                <div key={i} className="flex gap-2">
-                  <span className="text-slate-600 select-none">&gt;</span>
-                  <span className={l.includes("Error") || l.includes("❌") || l.includes("Fallo") ? "text-rose-400" : ""}>{l}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
 
         {error && !isLoading && <ErrorState message={error} />}
@@ -224,24 +180,6 @@ export function DashboardLayout() {
               <code className="rounded bg-slate-900 px-2 py-0.5 font-mono text-indigo-400">
                 {walletAddress}
               </code>
-              {analysisResult.payment_tx_hash && (
-                <span className="text-slate-400" title="Liquidación x402 (USDC)">
-                  Pago:{" "}
-                  <a
-                    className="font-mono text-emerald-400 underline-offset-2 hover:underline"
-                    href={`${
-                      String(import.meta.env.VITE_X402_NETWORK ?? "fuji").toLowerCase() ===
-                      "mainnet"
-                        ? "https://snowtrace.io"
-                        : "https://testnet.snowtrace.io"
-                    }/tx/${analysisResult.payment_tx_hash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {analysisResult.payment_tx_hash.slice(0, 10)}…
-                  </a>
-                </span>
-              )}
               {isMyWallet && (
                 <span className="rounded-full bg-emerald-900/40 px-2 py-0.5 text-emerald-400">
                   Mi wallet
@@ -252,29 +190,54 @@ export function DashboardLayout() {
                   {analysisResult.chain}
                 </span>
               )}
+              {analysisResult.payment_tx_hash && (
+                <a
+                  href={`${analysisResult.chain === "ethereum" ? "https://etherscan.io" : analysisResult.chain === "fuji" ? "https://testnet.snowtrace.io" : "https://snowtrace.io"}/tx/${analysisResult.payment_tx_hash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-400 hover:bg-emerald-500/20"
+                  title="Pago realizado vía x402 (USDC)"
+                >
+                  <CreditCard className="h-3 w-3" />
+                  x402 · Pago USDC
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => downloadReportPdf(analysisResult, walletAddress)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-600 bg-slate-800/80 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-slate-100 transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Descargar PDF
+              </button>
             </div>
 
-            <IdentityBadge result={analysisResult} />
-
-            {agentLogs && (
-              <details className="group rounded-xl border border-slate-800 bg-slate-950/50 p-4 transition-all hover:bg-slate-950">
-                <summary className="flex cursor-pointer items-center justify-between text-sm font-medium text-slate-400 selection:bg-transparent">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Evidencia de Operación del Agente (x402 Logs)</span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="mt-4 space-y-2 rounded-lg bg-black/50 p-4 font-mono text-xs text-slate-500 max-h-60 overflow-y-auto">
-                   {agentLogs.map((l, i) => (
-                     <div key={i} className="flex gap-2">
-                       <span className="text-slate-800">&gt;</span>
-                       <span>{l}</span>
-                     </div>
-                   ))}
-                </div>
-              </details>
+            {analysisResult.payment_tx_hash && (
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/20 px-4 py-2 text-xs text-slate-400">
+                <span className="font-semibold text-emerald-400">x402:</span> Este análisis fue pagado con USDC. Conecta tu wallet para pagar vía x402 cuando el servidor requiera cobro (Fuji o C-Chain).
+              </div>
             )}
+
+            {analysisResult.interaction_breakdown && analysisResult.interaction_breakdown.length > 0 && (
+              <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-4">
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                  Tipos de cuenta con los que has interactuado
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {analysisResult.interaction_breakdown.map((b) => (
+                    <span
+                      key={b.type}
+                      className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm"
+                    >
+                      <span className="font-medium text-slate-300">{b.label}</span>
+                      <span className="ml-2 text-slate-500">{b.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <IdentityBadge result={analysisResult} />
 
             <div className="mx-auto flex max-w-xl flex-col gap-8 lg:max-w-none lg:flex-row lg:items-start lg:gap-8">
               <div className="min-w-0 flex-1 lg:max-w-xl">
@@ -284,7 +247,10 @@ export function DashboardLayout() {
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <GasEfficiencyChart data={analysisResult.gas_efficiency ?? []} />
+                <GasEfficiencyChart
+                  data={analysisResult.gas_efficiency ?? []}
+                  chain={analysisResult.chain}
+                />
               </div>
             </div>
           </div>

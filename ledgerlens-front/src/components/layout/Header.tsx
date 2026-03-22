@@ -14,7 +14,7 @@ import { useRunAnalysis } from "@/features/analysis/hooks/useRunAnalysis"
 import type { SupportedChain } from "@/lib/api"
 import { chainIdForApp } from "@/wagmi"
 
-export function Header({ onRunAgent }: { onRunAgent?: (a?: string) => void }) {
+export function Header() {
   const [input, setInput] = useState("")
   const [walletMenuOpen, setWalletMenuOpen] = useState(false)
   const walletWrapRef = useRef<HTMLDivElement>(null)
@@ -132,7 +132,7 @@ export function Header({ onRunAgent }: { onRunAgent?: (a?: string) => void }) {
           <Button
             onClick={handleSearch}
             disabled={isLoading || !input.trim()}
-            className="h-10 shrink-0 bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-40 rounded-r-none"
+            className="h-10 shrink-0 bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-40"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -142,17 +142,6 @@ export function Header({ onRunAgent }: { onRunAgent?: (a?: string) => void }) {
               "Analyze"
             )}
           </Button>
-          {onRunAgent && (
-            <Button
-              type="button"
-              onClick={() => onRunAgent(input.trim())}
-              disabled={isLoading}
-              className="h-10 shrink-0 bg-emerald-500 text-slate-900 border-l border-emerald-600 font-bold px-4 hover:bg-emerald-400 rounded-l-none"
-              title="Autonomous AI Agent Audit (USDC Payment)"
-            >
-              🤖 AI Agent
-            </Button>
-          )}
         </div>
 
         <div className="relative shrink-0" ref={walletWrapRef}>

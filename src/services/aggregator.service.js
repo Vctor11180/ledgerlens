@@ -160,7 +160,10 @@ export function processRawTransactions(rawTxArray, opts = {}) {
       (values.tokenAmount === 0 || values.tokenAmount === undefined) &&
       action.toLowerCase().includes("transfer");
 
-    const isScam = containsCyrillic(values.tokenSymbol) || containsCyrillic(action) || isZeroValueSpam;
+    const hasCyrillicToken = containsCyrillic(values.tokenSymbol);
+    const hasCyrillicAction = containsCyrillic(action);
+    const scamReason = hasCyrillicToken ? "cyrillic_token" : hasCyrillicAction ? "cyrillic_action" : isZeroValueSpam ? "zero_value" : null;
+    const isScam = !!scamReason;
     const gasPaidByMe = (raw.from || "").toLowerCase() === walletLower;
 
     formattedTransactions.push({
@@ -177,6 +180,7 @@ export function processRawTransactions(rawTxArray, opts = {}) {
       token_symbol: values.tokenSymbol,
       token_value_usd: values.tokenValueUsd,
       is_scam: isScam,
+      scam_reason: scamReason,
       gas_paid_by_me: gasPaidByMe,
     });
 
@@ -205,17 +209,44 @@ export function processRawTransactions(rawTxArray, opts = {}) {
     chain
   );
   const gasEfficiency = buildGasEfficiency(formattedTransactions);
+  const interactionBreakdown = buildInteractionBreakdown(actionCount);
 
   return {
     formattedTransactions,
     statisticalSummary,
     gasEfficiency,
+    interaction_breakdown: interactionBreakdown,
     wallet_summary: {
       total_received_usd: roundUsd(totalReceivedUsd),
       total_sent_usd: roundUsd(totalSentUsd),
       total_gas_spent_usd: roundUsd(totalGasSpentUsd),
     }
   };
+}
+
+/** Agrupa acciones en tipos de cuenta/destino para mostrar con quién interactuaste. */
+function buildInteractionBreakdown(actionCount) {
+  const result = { DEX: 0, Bridge: 0, Transfer: 0, Approve: 0, Contract: 0 };
+
+  for (const [action, count] of actionCount) {
+    const a = String(action).toLowerCase();
+    if (a.includes("dex") || a.includes("router")) {
+      result.DEX += count;
+    } else if (a.includes("bridge")) {
+      result.Bridge += count;
+    } else if (a.includes("approve")) {
+      result.Approve += count;
+    } else if (a.includes("transfer") || a.includes("avax") || a.includes("eth")) {
+      result.Transfer += count;
+    } else {
+      result.Contract += count;
+    }
+  }
+
+  const labels = { DEX: "DEX / Swaps", Bridge: "Bridges", Transfer: "Wallets / Transferencias", Approve: "Aprobaciones", Contract: "Contratos" };
+  return Object.entries(result)
+    .filter(([, c]) => c > 0)
+    .map(([type, count]) => ({ type, label: labels[type], count }));
 }
 
 function formatCounterparty(raw) {
@@ -316,30 +347,61 @@ function buildStatisticalSummary(
  * Agrupa gas por hora (UTC) usando datos reales de las txs.
  * Solo datos on-chain: sin estimados ni promedios inventados.
  */
+/**
+ * Gas por transacción a lo largo del tiempo (orden cronológico).
+ * Si hay muchas txs, agrupa por día para legibilidad.
+ */
 function buildGasEfficiency(formattedTransactions) {
-  const byHour = new Map();
+  const txsWithGas = formattedTransactions
+    .filter((tx) => !tx.is_scam && tx.gas_paid_by_me && (tx.gas_usd ?? 0) >= 0)
+    .map((tx) => {
+      const d = new Date(tx.time);
+      return {
+        time: tx.time,
+        timestamp: d.getTime(),
+        gas_usd: roundUsd(tx.gas_usd ?? 0),
+        action: tx.action,
+        label: d.toLocaleDateString("es-CL", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+    })
+    .sort((a, b) => a.timestamp - b.timestamp);
 
-  for (const tx of formattedTransactions) {
-    if (tx.is_scam || !tx.gas_paid_by_me) continue;
-    const date = new Date(tx.time);
-    const hourKey = `${String(date.getUTCHours()).padStart(2, "0")}:00`;
-    const current = byHour.get(hourKey) ?? { totalGas: 0, count: 0 };
-    current.totalGas += tx.gas_usd;
-    current.count += 1;
-    byHour.set(hourKey, current);
+  if (txsWithGas.length === 0) {
+    return [{ label: "Sin datos", time: "", gas_usd: 0, tx_count: 0 }];
   }
 
-  // 24 horas para ver distribución real del día
-  const allHours = Array.from({ length: 24 }, (_, i) =>
-    `${String(i).padStart(2, "0")}:00`
-  );
+  const maxPoints = 50;
+  if (txsWithGas.length <= maxPoints) {
+    return txsWithGas.map((t) => ({
+      label: t.label,
+      time: t.time,
+      gas_usd: t.gas_usd,
+      tx_count: 1,
+      action: t.action,
+    }));
+  }
 
-  return allHours.map((hour) => {
-    const entry = byHour.get(hour) ?? { totalGas: 0, count: 0 };
-    return {
-      hour,
-      gas_usd: roundUsd(entry.totalGas),
-      tx_count: entry.count,
-    };
-  });
+  const byDay = new Map();
+  for (const t of txsWithGas) {
+    const dayKey = t.time.slice(0, 10);
+    const cur = byDay.get(dayKey) ?? { totalGas: 0, count: 0, time: t.time };
+    cur.totalGas += t.gas_usd;
+    cur.count += 1;
+    byDay.set(dayKey, cur);
+  }
+  return Array.from(byDay.entries()).map(([day, v]) => ({
+    label: new Date(day + "Z").toLocaleDateString("es-CL", {
+      day: "2-digit",
+      month: "short",
+      year: "2-digit",
+    }),
+    time: v.time,
+    gas_usd: roundUsd(v.totalGas),
+    tx_count: v.count,
+  }));
 }
