@@ -99,8 +99,8 @@ export function Header() {
           onClick={reset}
           className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
         >
-          <Eye className="h-5 w-5 text-white" />
-          <span className="text-xl font-bold tracking-tighter text-white uppercase font-display">
+          <Eye className="h-5 w-5 text-foreground" />
+          <span className="text-xl font-bold tracking-tighter text-foreground uppercase font-display">
             Prisma
           </span>
         </button>
@@ -112,20 +112,20 @@ export function Header() {
               handleChainSelect(e.target.value as SupportedChain)
             }
             disabled={isSwitching}
-            className="h-10 rounded-md border border-slate-800 bg-slate-900/50 px-3 text-sm text-slate-200 disabled:opacity-50"
+            className="h-10 rounded-md border border-border bg-muted px-3 text-sm text-foreground disabled:opacity-50 focus:ring-2 focus:ring-accent/20 outline-none"
           >
             <option value="avalanche">Avalanche (C-Chain)</option>
             <option value="fuji">Avalanche Fuji (testnet)</option>
             <option value="ethereum">Ethereum</option>
           </select>
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Connect wallet to auto-fill, or paste address (0x...)"
-              className="h-10 border-slate-800 bg-slate-900/50 pl-10 font-mono text-sm text-slate-200 placeholder:text-slate-600 focus-visible:ring-indigo-500/40"
+              className="h-10 border-border bg-muted pl-10 font-mono text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-accent/40"
             />
           </div>
           <Button
@@ -157,14 +157,14 @@ export function Header() {
             )}
           </Button>
 
-          <div className="h-6 w-px bg-white/10" />
+          <div className="h-6 w-px bg-border" />
 
           <div className="relative shrink-0" ref={walletWrapRef}>
           {connected ? (
             <div className="flex flex-wrap items-center justify-end gap-2">
               {balance && (
                 <span
-                  className="rounded-md bg-slate-800/80 px-2 py-1 font-mono text-xs text-emerald-400"
+                  className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-emerald-600 dark:text-emerald-400 font-bold"
                   title={`Balance: ${balance.value} wei`}
                 >
                   {(Number(balance.value) / 10 ** balance.decimals).toFixed(4)}{" "}
@@ -179,7 +179,7 @@ export function Header() {
                 variant="outline"
                 disabled={isDisconnecting}
                 onClick={() => changeWallet()}
-                className="h-10 shrink-0 border-slate-700 bg-transparent text-xs text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                className="h-10 shrink-0 border-border bg-transparent text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
                 title="Desconectar y elegir otra wallet (MetaMask, Core, etc.)"
               >
                 Cambiar wallet
@@ -189,7 +189,7 @@ export function Header() {
                 variant="outline"
                 disabled={isDisconnecting}
                 onClick={() => disconnectAsync()}
-                className="h-10 shrink-0 gap-2 border-slate-700 bg-transparent text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                className="h-10 shrink-0 gap-2 border-border bg-transparent text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <LogOut className="h-4 w-4" />
                 Salir
@@ -209,7 +209,7 @@ export function Header() {
                 <ChevronDown className="h-4 w-4 opacity-70" />
               </Button>
               {walletMenuOpen && (
-                <div className="absolute right-0 top-full z-[100] mt-1 min-w-[220px] rounded-md border border-slate-800 bg-slate-900 py-1 shadow-xl">
+                <div className="absolute right-0 top-full z-[100] mt-1 min-w-[220px] rounded-md border border-border bg-card py-1 shadow-xl">
                   {connectError && (
                     <div className="border-b border-slate-800 px-3 py-2">
                       <p className="text-xs text-red-400">{connectError.message}</p>
@@ -224,7 +224,7 @@ export function Header() {
                       <button
                         key={connector.id}
                         type="button"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-200 hover:bg-slate-800"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
                         onClick={() => connectWithConnector(connector)}
                       >
                         {connector.name}

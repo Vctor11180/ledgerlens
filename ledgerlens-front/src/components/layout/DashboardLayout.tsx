@@ -115,8 +115,8 @@ function EmptyState({
       {/* Camera Lens Focus Area */}
       <div className="relative mb-8 group" ref={lensRef}>
         {/* Orbital Ring - Moving Circle */}
-        <div className="absolute inset-0 -m-8 rounded-full border border-white/5 animate-spin-slow-very pointer-events-none" />
-        <div className="absolute inset-0 -m-8 border-t border-white/20 rounded-full animate-spin-slow-very pointer-events-none" />
+        <div className="absolute inset-0 -m-8 rounded-full border border-border/10 animate-spin-slow-very pointer-events-none" />
+        <div className="absolute inset-0 -m-8 border-t border-border rounded-full animate-spin-slow-very pointer-events-none" />
         
         {/* Main Lens Body */}
         <div className="relative h-20 w-20 flex items-center justify-center rounded-full bg-card ring-1 ring-border shadow-[0_0_50px_rgba(var(--accent-rgb),0.1)] overflow-hidden">
@@ -138,10 +138,10 @@ function EmptyState({
         </div>
 
         {/* Tactical Crosshairs */}
-        <div className="absolute -top-4 -left-4 w-4 h-4 border-t border-l border-white/40" />
-        <div className="absolute -top-4 -right-4 w-4 h-4 border-t border-r border-white/40" />
-        <div className="absolute -bottom-4 -left-4 w-4 h-4 border-b border-l border-white/40" />
-        <div className="absolute -bottom-4 -right-4 w-4 h-4 border-b border-r border-white/40" />
+        <div className="absolute -top-4 -left-4 w-4 h-4 border-t border-l border-border dark:border-white/40" />
+        <div className="absolute -top-4 -right-4 w-4 h-4 border-t border-r border-border dark:border-white/40" />
+        <div className="absolute -bottom-4 -left-4 w-4 h-4 border-b border-l border-border dark:border-white/40" />
+        <div className="absolute -bottom-4 -right-4 w-4 h-4 border-b border-r border-border dark:border-white/40" />
       </div>
 
       <div className="space-y-6">
@@ -168,7 +168,7 @@ function EmptyState({
           <button
             type="button"
             onClick={onAnalyzeMyWallet}
-            className="h-12 inline-flex items-center gap-3 bg-white px-8 text-[11px] font-black tracking-widest text-slate-950 transition-all hover:bg-slate-200 active:scale-95 shadow-xl shadow-white/5 font-display"
+            className="h-12 inline-flex items-center gap-3 bg-foreground px-8 text-[11px] font-black tracking-widest text-background transition-all hover:opacity-90 active:scale-95 shadow-xl shadow-accent/5 font-display"
           >
             <Wallet className="h-4 w-4" strokeWidth={3} />
             SCAN CONNECTED WALLET
@@ -285,10 +285,10 @@ export function DashboardLayout() {
 
       <main className="flex-1 px-4 py-8 sm:px-6 relative z-10 w-full max-w-[1400px] mx-auto transition-all">
         {/* Terminal Corner Marks (HUD) */}
-        <div className="absolute top-4 left-4 h-8 w-8 border-t border-l border-border rounded-tl-lg pointer-events-none" />
-        <div className="absolute top-4 right-4 h-8 w-8 border-t border-r border-border rounded-tr-lg pointer-events-none" />
-        <div className="absolute bottom-4 left-4 h-8 w-8 border-b border-l border-border rounded-bl-lg pointer-events-none" />
-        <div className="absolute bottom-4 right-4 h-8 w-8 border-b border-r border-border rounded-br-lg pointer-events-none" />
+        <div className="absolute top-4 left-4 h-8 w-8 border-t border-l border-border dark:border-white/20 rounded-tl-lg pointer-events-none" />
+        <div className="absolute top-4 right-4 h-8 w-8 border-t border-r border-border dark:border-white/20 rounded-tr-lg pointer-events-none" />
+        <div className="absolute bottom-4 left-4 h-8 w-8 border-b border-l border-border dark:border-white/20 rounded-bl-lg pointer-events-none" />
+        <div className="absolute bottom-4 right-4 h-8 w-8 border-b border-r border-border dark:border-white/20 rounded-br-lg pointer-events-none" />
 
         {!isLoading && !analysisResult && !error && (
           <EmptyState
