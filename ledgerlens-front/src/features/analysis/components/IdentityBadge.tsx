@@ -52,9 +52,9 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
       )}
     >
       {/* Background Fingerprint Scan Layer */}
-      <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+      <div className="absolute top-0 right-0 p-8 opacity-[0.08] dark:opacity-[0.05] pointer-events-none">
         <Fingerprint className="h-48 w-48 text-foreground animate-pulse" />
-        <div className="absolute top-0 left-0 w-full h-1 bg-foreground/20 animate-[scanline_3s_linear_infinite]" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-accent/20 animate-[scanline_3s_linear_infinite]" />
       </div>
 
       <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
@@ -64,12 +64,12 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
           className="relative group shrink-0"
         >
           {/* Orbital Ring Logo */}
-          <div className="absolute inset-0 -m-4 rounded-full border border-white/5 animate-spin-slow-very" />
-          <div className="absolute inset-0 -m-4 border-t border-white/20 rounded-full animate-spin-slow-very" />
+          <div className="absolute inset-0 -m-4 rounded-full border border-accent/10 animate-spin-slow-very" />
+          <div className="absolute inset-0 -m-4 border-t border-accent/40 rounded-full animate-spin-slow-very" />
           
           <div className={cn(
-            "flex h-24 w-24 items-center justify-center rounded-full bg-muted ring-1 ring-border overflow-hidden",
-            isBot ? "shadow-[0_0_20px_rgba(239,68,68,0.2)]" : "shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+            "flex h-24 w-24 items-center justify-center rounded-full bg-muted ring-1 ring-border overflow-hidden shadow-inner",
+            isBot ? "shadow-[0_0_20px_rgba(239,68,68,0.2)]" : "shadow-[0_0_20px_rgba(var(--accent-rgb),0.2)]"
           )}>
             {isBot ? (
               <Bot className="h-12 w-12 text-red-400" />
@@ -98,12 +98,12 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
             )}
             
             {/* Glossy Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-accent/10 to-transparent pointer-events-none" />
           </div>
           
           {/* Status Indicator */}
           <div className={cn(
-            "absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-black",
+            "absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-card",
             isBot ? "bg-red-500" : "bg-emerald-500"
           )} />
         </div>
@@ -148,8 +148,8 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
             </div>
           </div>
 
-          <div className="relative rounded-lg border border-border bg-muted/20 p-5 shadow-inner">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          <div className="relative rounded-lg border border-border bg-accent/[0.03] dark:bg-muted/20 p-5 shadow-inner">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
             <p className="text-xs leading-relaxed text-slate-400 italic font-medium">
               <span className="mb-2 block text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
                 Neural Inference Narrative:
@@ -158,14 +158,14 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
             </p>
           </div>
           
-          <div className="flex items-center gap-6 pt-2 opacity-40">
+          <div className="flex items-center gap-6 pt-2 opacity-60">
              <div className="flex items-center gap-2">
-                <div className="h-1 w-8 bg-slate-800" />
-                <span className="text-[8px] font-mono text-slate-600">SECURE_CHANNEL</span>
+                <div className="h-1 w-8 bg-border" />
+                <span className="text-[8px] font-mono text-muted-foreground">SECURE_CHANNEL</span>
              </div>
              <div className="flex items-center gap-2">
-                <div className="h-1 w-8 bg-slate-800" />
-                <span className="text-[8px] font-mono text-slate-600">EVM_TRACE_COMPLETE</span>
+                <div className="h-1 w-8 bg-border" />
+                <span className="text-[8px] font-mono text-muted-foreground">EVM_TRACE_COMPLETE</span>
              </div>
           </div>
         </div>
