@@ -2,19 +2,49 @@
 
 @custom-variant dark (&:is(.dark *));
 
+:root {
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --primary: #0F172A;
+  --primary-foreground: #F8FAFC;
+  --secondary: #64748B;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #10B981;
+  --border: #E2E8F0;
+  --input: #F1F5F9;
+}
+
+.dark {
+  --background: #131315;
+  --foreground: #e5e1e4;
+  --card: #1C1C1E;
+  --card-foreground: #e5e1e4;
+  --primary: #ffffff;
+  --primary-foreground: #131315;
+  --secondary: #c8c6c9;
+  --muted: #353437;
+  --muted-foreground: #c4c7c9;
+  --accent: #10B981;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.05);
+}
+
 @theme inline {
-  --color-background: #131315;
-  --color-foreground: #e5e1e4;
-  --color-card: #201f22;
-  --color-card-foreground: #e5e1e4;
-  --color-primary: #ffffff;
-  --color-primary-foreground: #131315;
-  --color-secondary: #c8c6c9;
-  --color-muted: #353437;
-  --color-muted-foreground: #c4c7c9;
-  --color-accent: #ffffff;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-input: rgba(255, 255, 255, 0.05);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-input: var(--input);
   
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", sans-serif;

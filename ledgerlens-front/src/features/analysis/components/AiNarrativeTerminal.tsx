@@ -31,12 +31,12 @@ export function AiNarrativeTerminal({ result, address }: AiNarrativeTerminalProp
   }, [displayedText])
 
   return (
-    <div className="flex h-full min-h-[400px] flex-col overflow-hidden rounded-xl border border-white/5 bg-black/40 shadow-2xl backdrop-blur-xl transition-all hover:border-white/10">
+    <div className="flex h-full min-h-[400px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl backdrop-blur-xl transition-all hover:border-accent/20">
       {/* Terminal Title Bar */}
       <div className="flex items-center justify-between border-b border-white/5 bg-white/5 px-4 py-3">
         <div className="flex items-center gap-3">
-          <Terminal className="h-4 w-4 text-emerald-500" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
+          <Terminal className="h-4 w-4 text-accent" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
             Neural Log Sequence: PRISMA_V1
           </span>
         </div>
@@ -70,7 +70,7 @@ export function AiNarrativeTerminal({ result, address }: AiNarrativeTerminalProp
 
         <div className="space-y-4">
           <div className="flex gap-3">
-            <span className="shrink-0 text-emerald-500 font-black tracking-tighter">&gt;</span>
+            <span className="shrink-0 text-accent font-black tracking-tighter">&gt;</span>
             <div className="whitespace-pre-wrap">
               <DecryptText text={displayedText} speed={10} />
             </div>
@@ -82,7 +82,7 @@ export function AiNarrativeTerminal({ result, address }: AiNarrativeTerminalProp
       </div>
 
       {/* Terminal Footer */}
-      <div className="border-t border-white/5 bg-white/[0.02] px-4 py-2 flex items-center justify-between">
+      <div className="border-t border-border bg-muted/20 px-4 py-2 flex items-center justify-between">
          <span className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter animate-pulse">
             Listening for network signals...
          </span>

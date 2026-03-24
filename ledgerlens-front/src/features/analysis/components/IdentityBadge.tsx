@@ -45,16 +45,16 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border p-8 transition-all duration-700 bg-[#131315]",
+        "relative overflow-hidden rounded-xl border p-8 transition-all duration-700 bg-card",
         isBot
           ? "border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.1)]"
-          : "border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.1)]"
+          : "border-accent/30 shadow-[0_0_40px_rgba(16,185,129,0.1)]"
       )}
     >
       {/* Background Fingerprint Scan Layer */}
-      <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-        <Fingerprint className="h-48 w-48 text-white animate-pulse" />
-        <div className="absolute top-0 left-0 w-full h-1 bg-white/20 animate-[scanline_3s_linear_infinite]" />
+      <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+        <Fingerprint className="h-48 w-48 text-foreground animate-pulse" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-foreground/20 animate-[scanline_3s_linear_infinite]" />
       </div>
 
       <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
@@ -68,7 +68,7 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
           <div className="absolute inset-0 -m-4 border-t border-white/20 rounded-full animate-spin-slow-very" />
           
           <div className={cn(
-            "flex h-24 w-24 items-center justify-center rounded-full bg-black ring-1 ring-white/10 overflow-hidden",
+            "flex h-24 w-24 items-center justify-center rounded-full bg-muted ring-1 ring-border overflow-hidden",
             isBot ? "shadow-[0_0_20px_rgba(239,68,68,0.2)]" : "shadow-[0_0_20px_rgba(16,185,129,0.2)]"
           )}>
             {isBot ? (
@@ -111,7 +111,7 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
         <div className="min-w-0 flex-1 space-y-6 w-full text-center md:text-left">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-              <h2 className="text-3xl font-black text-white tracking-widest uppercase font-display italic">
+              <h2 className="text-3xl font-black text-foreground tracking-widest uppercase font-display italic">
                 <DecryptText text={result.identity} />
               </h2>
               <div
@@ -137,7 +137,7 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
               <span>Risk Probability Index</span>
               <span className={cn("text-lg", riskColor)}>{result.risk_score}%</span>
             </div>
-            <div className="h-1.5 w-full bg-white/5 overflow-hidden">
+            <div className="h-1.5 w-full bg-muted overflow-hidden">
               <div
                 className={cn(
                   "h-full transition-all duration-1000 ease-out",
@@ -148,8 +148,8 @@ export function IdentityBadge({ result, address }: IdentityBadgeProps) {
             </div>
           </div>
 
-          <div className="relative rounded-lg border border-white/5 bg-white/[0.02] p-5 shadow-inner">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <div className="relative rounded-lg border border-border bg-muted/20 p-5 shadow-inner">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
             <p className="text-xs leading-relaxed text-slate-400 italic font-medium">
               <span className="mb-2 block text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
                 Neural Inference Narrative:

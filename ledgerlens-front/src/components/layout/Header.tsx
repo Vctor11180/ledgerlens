@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react"
-import { Search, Loader2, Eye, Wallet, LogOut, ChevronDown } from "lucide-react"
+import React, { useEffect, useRef, useState } from "react"
+import { Search, Loader2, Eye, Wallet, LogOut, ChevronDown, Sun, Moon } from "lucide-react"
+import { useTheme } from "@/context/ThemeContext"
 import {
   useBalance,
   useConnect,
@@ -89,8 +90,10 @@ export function Header() {
     setWalletMenuOpen(false)
   }
 
+  const { theme, toggleTheme } = useTheme()
+
   return (
-    <header className="sticky top-0 z-50 border-b border-white/5 bg-[#131315] font-sans antialiased">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md font-sans antialiased">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
         <button
           onClick={reset}
@@ -140,7 +143,23 @@ export function Header() {
           </Button>
         </div>
 
-        <div className="relative shrink-0" ref={walletWrapRef}>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            className="h-10 w-10 text-slate-400 hover:text-white"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
+
+          <div className="h-6 w-px bg-white/10" />
+
+          <div className="relative shrink-0" ref={walletWrapRef}>
           {connected ? (
             <div className="flex flex-wrap items-center justify-end gap-2">
               {balance && (
@@ -181,7 +200,7 @@ export function Header() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setWalletMenuOpen((o) => !o)}
+                onClick={() => setWalletMenuOpen((o: boolean) => !o)}
                 disabled={isConnecting}
                 className="h-10 shrink-0 gap-2 border-slate-700 bg-transparent text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
               >
@@ -216,6 +235,7 @@ export function Header() {
               )}
             </>
           )}
+          </div>
         </div>
       </div>
     </header>
