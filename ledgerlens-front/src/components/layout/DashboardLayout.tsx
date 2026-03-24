@@ -17,6 +17,7 @@ import {
   Zap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useEffect, useRef, useState } from "react"
 import { useConnection } from "wagmi"
 import { AiNarrativeTerminal } from "@/features/analysis/components/AiNarrativeTerminal"
 
@@ -47,10 +48,36 @@ function EmptyState({
   onAnalyzeMyWallet?: () => void
   hasConnectedWallet?: boolean
 }) {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const lensRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!lensRef.current) return
+      const rect = lensRef.current.getBoundingClientRect()
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
+      
+      // Calculate delta and limit to a small range (e.g., 6px)
+      const deltaX = (e.clientX - centerX) / 25
+      const deltaY = (e.clientY - centerY) / 25
+      
+      // Smooth clamping
+      const limit = 6
+      const clampedX = Math.max(-limit, Math.min(limit, deltaX))
+      const clampedY = Math.max(-limit, Math.min(limit, deltaY))
+      
+      setMousePos({ x: clampedX, y: clampedY })
+    }
+
+    window.addEventListener("mousemove", handleMouseMove)
+    return () => window.removeEventListener("mousemove", handleMouseMove)
+  }, [])
+
   return (
     <div className="flex min-h-[75vh] flex-col items-center justify-center gap-10 text-center relative z-10">
       {/* Camera Lens Focus Area */}
-      <div className="relative mb-8 group">
+      <div className="relative mb-8 group" ref={lensRef}>
         {/* Orbital Ring - Moving Circle */}
         <div className="absolute inset-0 -m-8 rounded-full border border-white/5 animate-spin-slow-very pointer-events-none" />
         <div className="absolute inset-0 -m-8 border-t border-white/20 rounded-full animate-spin-slow-very pointer-events-none" />
@@ -60,8 +87,15 @@ function EmptyState({
           {/* Glass Reflection */}
           <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
           
-          {/* The Blinking Eye */}
-          <Eye className="h-10 w-10 text-white animate-blink" />
+          {/* The Blinking and Tracking Eye */}
+          <div 
+            style={{ 
+              transform: `translate(${mousePos.x}px, ${mousePos.y}px)`,
+              transition: 'transform 0.1s ease-out'
+            }}
+          >
+            <Eye className="h-10 w-10 text-white animate-blink" />
+          </div>
           
           {/* Subtle Scanlines inside lens */}
           <div className="absolute inset-0 scanline-overlay opacity-20" />
