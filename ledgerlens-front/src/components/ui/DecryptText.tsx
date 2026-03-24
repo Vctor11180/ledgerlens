@@ -10,12 +10,12 @@ interface DecryptTextProps {
 
 const CHARS = "ABCDEFGHJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+<>?/[{}]:;"
 
-export function DecryptText({ 
-  text, 
-  speed = 40, 
-  delay = 0, 
+export function DecryptText({
+  text,
+  speed = 10,
+  delay = 0,
   className = "",
-  as: Component = "span" 
+  as: Component = "span"
 }: DecryptTextProps) {
   const [displayedText, setDisplayedText] = useState("")
   const [isAnimating, setIsAnimating] = useState(false)
@@ -45,7 +45,7 @@ export function DecryptText({
           setIsAnimating(false)
         }
 
-        iterations += 1 // Much faster reveal (1 char per tick)
+        iterations += 2 // Revelar 2 caracteres cada 10ms (200 chars/seg)
       }, speed)
       return () => clearInterval(interval)
     }
