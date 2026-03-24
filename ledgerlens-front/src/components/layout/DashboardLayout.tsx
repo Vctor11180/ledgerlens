@@ -119,9 +119,9 @@ function EmptyState({
         <div className="absolute inset-0 -m-8 border-t border-border rounded-full animate-spin-slow-very pointer-events-none" />
         
         {/* Main Lens Body */}
-        <div className="relative h-20 w-20 flex items-center justify-center rounded-full bg-card ring-1 ring-border shadow-[0_0_50px_rgba(var(--accent-rgb),0.1)] overflow-hidden">
+        <div className="relative h-20 w-20 flex items-center justify-center rounded-full bg-foreground shadow-[0_0_50px_rgba(var(--accent-rgb),0.1)] overflow-hidden">
           {/* Glass Reflection */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none opacity-30" />
           
           {/* The Blinking and Tracking Eye */}
           <div 
@@ -130,18 +130,18 @@ function EmptyState({
               transition: 'transform 0.1s ease-out'
             }}
           >
-            <Eye className="h-10 w-10 text-foreground animate-blink" />
+            <Eye className="h-10 w-10 text-background animate-blink" />
           </div>
           
           {/* Subtle Scanlines inside lens */}
-          <div className="absolute inset-0 scanline-overlay opacity-10" />
+          <div className="absolute inset-0 scanline-overlay opacity-20" />
         </div>
 
         {/* Tactical Crosshairs */}
-        <div className="absolute -top-4 -left-4 w-4 h-4 border-t border-l border-border dark:border-white/40" />
-        <div className="absolute -top-4 -right-4 w-4 h-4 border-t border-r border-border dark:border-white/40" />
-        <div className="absolute -bottom-4 -left-4 w-4 h-4 border-b border-l border-border dark:border-white/40" />
-        <div className="absolute -bottom-4 -right-4 w-4 h-4 border-b border-r border-border dark:border-white/40" />
+        <div className="absolute -top-4 -left-4 w-4 h-4 border-t border-l border-foreground" />
+        <div className="absolute -top-4 -right-4 w-4 h-4 border-t border-r border-foreground" />
+        <div className="absolute -bottom-4 -left-4 w-4 h-4 border-b border-l border-foreground" />
+        <div className="absolute -bottom-4 -right-4 w-4 h-4 border-b border-r border-foreground" />
       </div>
 
       <div className="space-y-6">
@@ -272,11 +272,11 @@ export function DashboardLayout() {
       {/* Biometric Background Layers */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <Fingerprint 
-          className="absolute -bottom-24 -right-24 h-[600px] w-[600px] text-accent/10 animate-pulse-slow" 
+          className="absolute -bottom-24 -right-24 h-[600px] w-[600px] text-foreground/[0.04] dark:text-accent/10 animate-pulse-slow" 
           strokeWidth={0.5}
         />
         <Fingerprint 
-          className="absolute -top-32 -left-32 h-[400px] w-[400px] text-accent/5 animate-spin-slow-very" 
+          className="absolute -top-32 -left-32 h-[400px] w-[400px] text-foreground/[0.02] dark:text-accent/5 animate-spin-slow-very" 
           strokeWidth={0.5}
         />
       </div>
@@ -285,10 +285,10 @@ export function DashboardLayout() {
 
       <main className="flex-1 px-4 py-8 sm:px-6 relative z-10 w-full max-w-[1400px] mx-auto transition-all">
         {/* Terminal Corner Marks (HUD) */}
-        <div className="absolute top-4 left-4 h-8 w-8 border-t border-l border-border dark:border-white/20 rounded-tl-lg pointer-events-none" />
-        <div className="absolute top-4 right-4 h-8 w-8 border-t border-r border-border dark:border-white/20 rounded-tr-lg pointer-events-none" />
-        <div className="absolute bottom-4 left-4 h-8 w-8 border-b border-l border-border dark:border-white/20 rounded-bl-lg pointer-events-none" />
-        <div className="absolute bottom-4 right-4 h-8 w-8 border-b border-r border-border dark:border-white/20 rounded-br-lg pointer-events-none" />
+        <div className="absolute top-4 left-4 h-8 w-8 border-t border-l border-foreground dark:border-white/20 rounded-tl-lg pointer-events-none" />
+        <div className="absolute top-4 right-4 h-8 w-8 border-t border-r border-foreground dark:border-white/20 rounded-tr-lg pointer-events-none" />
+        <div className="absolute bottom-4 left-4 h-8 w-8 border-b border-l border-foreground dark:border-white/20 rounded-bl-lg pointer-events-none" />
+        <div className="absolute bottom-4 right-4 h-8 w-8 border-b border-r border-foreground dark:border-white/20 rounded-br-lg pointer-events-none" />
 
         {!isLoading && !analysisResult && !error && (
           <EmptyState
